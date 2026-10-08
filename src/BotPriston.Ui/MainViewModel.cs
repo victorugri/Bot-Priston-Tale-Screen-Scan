@@ -107,7 +107,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool CanEdit => !IsRunning;
 
     [RelayCommand(CanExecute = nameof(CanEdit))]
-    private void Play()
+    private async Task PlayAsync()
     {
         if (!TrySave(out var config))
         {
@@ -115,20 +115,28 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Starting takes a couple of seconds (capture setup): do it off the UI thread so the window stays responsive.
+        IsRunning = true;
+        LastStopReason = "";
+        StatusText = "Iniciando...";
+        BotSession session;
         try
         {
-            _session = BotSession.Start(config, _log, new BotSessionOptions { Record = Record, BringGameToFront = true });
+            session = await Task.Run(() =>
+                BotSession.Start(config, _log, new BotSessionOptions { Record = Record, BringGameToFront = true }));
         }
         catch (Exception ex)
         {
             _log.Error("Could not start: {Message}", ex.Message);
-            StatusText = "Não iniciou: " + ex.Message;
+            IsRunning = false;
+            StatusText = "Parado";
+            LastStopReason = "Não iniciou: " + ex.Message;
             return;
         }
 
-        _session.Exited += session => Application.Current.Dispatcher.BeginInvoke(() => OnSessionExited(session));
-        LastStopReason = "";
-        IsRunning = true;
+        _session = session;
+        session.Exited += s => Application.Current.Dispatcher.BeginInvoke(() => OnSessionExited(s));
+        if (!session.IsRunning) OnSessionExited(session); // ended before we subscribed
         Refresh();
     }
 
@@ -140,9 +148,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnSessionExited(BotSession session)
     {
+        if (!ReferenceEquals(_session, session)) return; // already handled
         LastStopReason = $"Parou: {Translate(session.Runner.StopReason)}";
         session.Dispose();
-        if (ReferenceEquals(_session, session)) _session = null;
+        _session = null;
         IsRunning = false;
         _nextGameCheck = DateTime.MinValue;
         Refresh();
@@ -240,6 +249,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             GameText = "Jogo encontrado (1600x900)";
             return;
         }
+
+        if (IsRunning) return; // starting: the session is being built in the background
 
         StatusText = "Parado";
         ActivityText = "";

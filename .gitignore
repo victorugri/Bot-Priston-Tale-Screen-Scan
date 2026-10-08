@@ -8,3 +8,6 @@ TestResults/
 # Session recordings and calibration sweeps: large, analysed once, not needed by the tests
 samples/record_*/
 samples/probe_*/
+
+# Settings changed from the UI (botconfig.json keeps the defaults)
+settings.json

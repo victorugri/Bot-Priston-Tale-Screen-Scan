@@ -22,19 +22,23 @@ public static class ConfigLoader
     };
 
     /// <summary>
-    /// Finds the config file: explicit path, else ./botconfig.json, else next to the executable.
+    /// Finds the config file: explicit path, else ./botconfig.json, else next to the executable or in
+    /// one of its parent folders (an app started from bin/ finds the repository's config).
     /// </summary>
     public static string Resolve(string? explicitPath)
     {
         if (!string.IsNullOrWhiteSpace(explicitPath))
             return Path.GetFullPath(explicitPath);
 
-        var candidates = new[]
+        var inCurrent = Path.Combine(Environment.CurrentDirectory, DefaultFileName);
+        if (File.Exists(inCurrent)) return inCurrent;
+
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            Path.Combine(Environment.CurrentDirectory, DefaultFileName),
-            Path.Combine(AppContext.BaseDirectory, DefaultFileName),
-        };
-        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
+            var candidate = Path.Combine(dir.FullName, DefaultFileName);
+            if (File.Exists(candidate)) return candidate;
+        }
+        return inCurrent;
     }
 
     public static BotConfig Load(string path)

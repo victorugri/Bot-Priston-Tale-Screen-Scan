@@ -11,9 +11,13 @@ public sealed class BotControl
     private CancellationTokenSource _interrupt = new();
     private bool _paused;
     private bool _quitRequested;
+    private string _quitReason = "quit hotkey";
 
     public bool Paused { get { lock (_gate) return _paused; } }
     public bool QuitRequested { get { lock (_gate) return _quitRequested; } }
+
+    /// <summary>Why quitting was requested (shown as the bot's stop reason).</summary>
+    public string QuitReason { get { lock (_gate) return _quitReason; } }
     public CancellationToken Interrupt { get { lock (_gate) return _interrupt.Token; } }
 
     /// <summary>Returns the new paused state.</summary>
@@ -31,11 +35,12 @@ public sealed class BotControl
         lock (_gate) SetPausedLocked(paused);
     }
 
-    public void RequestQuit()
+    public void RequestQuit(string reason = "quit hotkey")
     {
         lock (_gate)
         {
             _quitRequested = true;
+            _quitReason = reason;
             _interrupt.Cancel();
         }
     }

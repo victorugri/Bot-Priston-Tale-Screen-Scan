@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Wires Core + Platform into a running bot. Shared by the console app and the UI. -->
+  <PropertyGroup>
+    <TargetFramework>$(WindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BotPriston.Core\BotPriston.Core.csproj" />
+    <ProjectReference Include="..\BotPriston.Platform\BotPriston.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

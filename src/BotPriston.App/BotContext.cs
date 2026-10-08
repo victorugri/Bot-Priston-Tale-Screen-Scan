@@ -1,7 +1,7 @@
 using BotPriston.Core.Config;
 using BotPriston.Core.Input;
 using BotPriston.Core.Vision;
-using BotPriston.Platform.Input;
+using BotPriston.Hosting;
 using BotPriston.Platform.Capture;
 using BotPriston.Platform.Window;
 using Serilog;
@@ -21,66 +21,15 @@ public sealed class BotContext(BotConfig config, string configPath, ILogger log)
     /// Finds the game window or throws with a helpful message. Commands that act on the game pass
     /// <paramref name="requireExpectedSize"/>: with any other client size every ROI is wrong, so they refuse to start.
     /// </summary>
-    public GameWindow FindGameWindow(bool requireExpectedSize = false)
-    {
-        var matches = WindowFinder.FindMatches(Config.Window);
-        if (matches.Count == 0)
-        {
-            throw new InvalidOperationException(
-                $"Game window not found (ProcessName='{Config.Window.ProcessName}', TitleContains='{Config.Window.TitleContains}'). " +
-                "Is the game running? Run the 'windows' command to see candidates and fix the Window section of the config.");
-        }
+    public GameWindow FindGameWindow(bool requireExpectedSize = false) =>
+        GameLocator.Find(Config, Log, requireExpectedSize);
 
-        var window = matches[0];
-        if (matches.Count > 1)
-        {
-            Log.Warning("{Count} windows match the filters; using the largest: {Window}", matches.Count, window);
-            foreach (var other in matches.Skip(1))
-                Log.Warning("  also matched: {Window}", other);
-        }
+    public WindowCaptureSource CreateCaptureSource(GameWindow window, CaptureBackend? backendOverride = null) =>
+        BotFactory.CreateCaptureSource(window, Config.Capture, Log, backendOverride);
 
-        if (window.IsMinimized)
-            throw new InvalidOperationException($"Game window {window} is minimized. Restore it and try again.");
+    public VisionPipeline CreateVision() => BotFactory.CreateVision(Config);
 
-        var client = window.ClientScreenRect;
-        Log.Information("Game window: {Window}, client {W}x{H} at screen ({X},{Y})",
-            window, client.Width, client.Height, client.X, client.Y);
-
-        if (client.Width != Config.Window.ExpectedClientWidth || client.Height != Config.Window.ExpectedClientHeight)
-        {
-            var message = $"Client area is {client.Width}x{client.Height} but {Config.Window.ExpectedClientWidth}x{Config.Window.ExpectedClientHeight} " +
-                          "is expected, so every screen position the bot uses is wrong. The window was probably resized or snapped; " +
-                          "run the 'layout' command (as administrator) to restore it.";
-            if (requireExpectedSize)
-                throw new InvalidOperationException(message);
-            Log.Warning("{Message}", message);
-        }
-
-        return window;
-    }
-
-    public WindowCaptureSource CreateCaptureSource(GameWindow window, CaptureBackend? backendOverride = null)
-    {
-        var captureConfig = Config.Capture;
-        if (backendOverride is { } backend)
-            captureConfig = new CaptureConfig { Backend = backend, FrameTimeoutMs = captureConfig.FrameTimeoutMs };
-
-        var source = CaptureSourceFactory.Create(window, captureConfig, Log);
-        Log.Information("Capture backend: {Backend}", source.Name);
-        return source;
-    }
-
-    public VisionPipeline CreateVision() => new(Config.Vision);
-
-    public IInputSink CreateInput(GameWindow window)
-    {
-        if (Config.Safety.DryRun)
-        {
-            Log.Warning("DRY-RUN: decisions are logged, no input is sent");
-            return new DryRunInputSink(Log);
-        }
-        return new SendInputSink(window, Config.Input, Log);
-    }
+    public IInputSink CreateInput(GameWindow window) => BotFactory.CreateInput(window, Config, Log);
 
     /// <summary>Waits until the user puts the game in the foreground. Input is never sent to another window.</summary>
     public bool WaitForFocus(GameWindow window, int seconds, CancellationToken cancel)
@@ -101,11 +50,7 @@ public sealed class BotContext(BotConfig config, string configPath, ILogger log)
         return false;
     }
 
-    public void WarnIfInputBlocked(GameWindow window)
-    {
-        if (ProcessElevation.InputBlockedWarning(window.ProcessId) is { } warning)
-            Log.Warning("{Warning}", warning);
-    }
+    public void WarnIfInputBlocked(GameWindow window) => BotFactory.WarnIfInputBlocked(window, Log);
 
     public static CaptureBackend? ParseBackend(string? text) => text?.ToLowerInvariant() switch
     {

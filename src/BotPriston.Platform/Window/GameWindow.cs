@@ -32,6 +32,13 @@ public sealed class GameWindow(IntPtr handle, int processId, string processName,
         }
     }
 
+    /// <summary>Restores the window if minimized and makes it the foreground window (allowed while our app is in front).</summary>
+    public bool BringToFront()
+    {
+        if (IsMinimized) WindowLayoutNative.ShowWindow(Handle, WindowLayoutNative.SW_RESTORE);
+        return User32.SetForegroundWindow(Handle);
+    }
+
     public (int Width, int Height) ClientSize
     {
         get

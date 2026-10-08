@@ -1,0 +1,359 @@
+<Window x:Class="BotPriston.Ui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BotPriston.Ui"
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:MainViewModel}"
+        Title="BotPriston" Width="360" Height="900" MinWidth="320" MinHeight="600"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="Segoe UI" FontSize="12.5" WindowStartupLocation="Manual" Left="0" Top="0">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <local:InverseBooleanToVisibilityConverter x:Key="Hidden" />
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <DockPanel Grid.Row="0">
+            <TextBlock Text="BotPriston" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+            <TextBlock Text="  Priston Tale" Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+        </DockPanel>
+
+        <TabControl Grid.Row="1">
+
+            <!-- ============================== Bot ============================== -->
+            <TabItem Header="Bot">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Checks -->
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Content="Ajustar janela" Margin="6,0,0,0" Padding="8,4"
+                                        Command="{Binding FixWindowCommand}"
+                                        ToolTip="Volta o jogo para 1600x900 e encosta à direita da tela (não use o Snap do Windows)." />
+                                <Ellipse Width="9" Height="9" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource Bad}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding GameReady}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource Good}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding GameText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Reabrir como admin" Margin="6,0,0,0" Padding="8,4"
+                                        Command="{Binding RestartAsAdminCommand}"
+                                        Visibility="{Binding IsAdmin, Converter={StaticResource Hidden}}"
+                                        ToolTip="O jogo roda como administrador: sem isso o Windows descarta as teclas e cliques do bot." />
+                                <Ellipse Width="9" Height="9" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource Bad}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAdmin}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource Good}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Sem administrador: o jogo vai ignorar o bot" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAdmin}" Value="True">
+                                                    <Setter Property="Text" Value="Rodando como administrador" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Status + controls -->
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding StatusText}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ActivityText}" Foreground="{StaticResource Muted}" Margin="0,2,0,0" />
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="▶  Iniciar" Style="{StaticResource PrimaryButton}" Command="{Binding PlayCommand}"
+                                        Padding="6,7" ToolTip="Salva os ajustes, traz o jogo para frente e começa." />
+                                <Button Grid.Column="1" Content="⏸ Pausar" Padding="4,7" Command="{Binding PauseCommand}"
+                                        ToolTip="Pausa/retoma (o mesmo que F12)." />
+                                <Button Grid.Column="2" Content="■ Parar" Style="{StaticResource DangerButton}" Margin="0" Padding="4,7"
+                                        Command="{Binding StopCommand}" ToolTip="Encerra a sessão (o mesmo que Ctrl+F12)." />
+                            </Grid>
+                            <CheckBox Content="Gravar a sessão (para diagnóstico, ~3 MB/s)" IsChecked="{Binding Record}"
+                                      IsEnabled="{Binding CanEdit}" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding LastStopReason}" Foreground="{StaticResource Warn}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                       Visibility="{Binding LastStopReason, Converter={x:Static local:NonEmptyToVisibilityConverter.Instance}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Stats -->
+                    <Border Grid.Row="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <UniformGrid Columns="3" Rows="2">
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="Mobs" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding Kills}" Style="{StaticResource StatValue}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Por mob" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding AverageKill}" Style="{StaticResource StatValue}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Tempo" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding Elapsed}" Style="{StaticResource StatValue}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Skill direita" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding RightSkillCasts}" Style="{StaticResource StatValue}" />
+                                </StackPanel>
+                                <StackPanel ToolTip="Alvos abandonados (sem dano por alguns segundos)">
+                                    <TextBlock Text="Desistências" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding GivenUp}" Style="{StaticResource StatValue}" />
+                                </StackPanel>
+                                <StackPanel ToolTip="Andadas cortadas pelo anti-andada / atacantes distantes atacados">
+                                    <TextBlock Text="Andadas / longe" Style="{StaticResource Label}" />
+                                    <TextBlock Style="{StaticResource StatValue}">
+                                        <Run Text="{Binding WalkStops, Mode=OneWay}" /><Run Text=" / " /><Run Text="{Binding DistantAttackers, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </UniformGrid>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition /><RowDefinition /><RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="HP" Style="{StaticResource Label}" />
+                                <ProgressBar Grid.Row="0" Grid.Column="1" Value="{Binding Hp, Mode=OneWay}" Foreground="{StaticResource Bad}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Hp, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Row="1" Text="MP" Style="{StaticResource Label}" />
+                                <ProgressBar Grid.Row="1" Grid.Column="1" Value="{Binding Mp, Mode=OneWay}" Foreground="{StaticResource Accent}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Mp, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Row="2" Text="STM" Style="{StaticResource Label}" />
+                                <ProgressBar Grid.Row="2" Grid.Column="1" Value="{Binding Stm, Mode=OneWay}" Foreground="{StaticResource Good}" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Stm, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Log -->
+                    <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0" Padding="4">
+                        <ListBox x:Name="Log" ItemsSource="{Binding LogLines}" Background="Transparent" BorderThickness="0"
+                                 Foreground="{StaticResource Muted}" FontFamily="Consolas" FontSize="11"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================== Ajustes ============================== -->
+            <TabItem Header="Ajustes">
+                <DockPanel>
+                    <!-- Save bar -->
+                    <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="0,10,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Salvar" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" />
+                                <Button Content="Restaurar padrões" Command="{Binding ResetDefaultsCommand}"
+                                        ToolTip="Apaga o settings.json e volta aos valores do botconfig.json." />
+                            </StackPanel>
+                            <TextBlock Text="{Binding SettingsMessage}" TextWrapping="Wrap" Margin="0,6,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource Good}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SettingsError}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource Bad}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="Pare o bot para mudar os ajustes." Foreground="{StaticResource Warn}"
+                                       Visibility="{Binding IsRunning, Converter={StaticResource Visible}}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel IsEnabled="{Binding CanEdit}">
+
+                            <!-- Potions -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Poções" Style="{StaticResource SectionTitle}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="50" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="72" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Tecla" Style="{StaticResource Label}" HorizontalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="Abaixo %" Style="{StaticResource Label}" HorizontalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="Intervalo ms" Style="{StaticResource Label}" HorizontalAlignment="Center" />
+
+                                        <CheckBox Grid.Row="1" Content="HP" IsChecked="{Binding Config.Potions.Hp.Enabled}" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Potions.Hp.Key}" HorizontalContentAlignment="Center" />
+                                        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding Config.Potions.Hp.BelowPercent}" />
+                                        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Config.Potions.Hp.CooldownMs}" />
+
+                                        <CheckBox Grid.Row="2" Content="MP" IsChecked="{Binding Config.Potions.Mp.Enabled}" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Potions.Mp.Key}" HorizontalContentAlignment="Center" />
+                                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding Config.Potions.Mp.BelowPercent}" />
+                                        <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Config.Potions.Mp.CooldownMs}" />
+
+                                        <CheckBox Grid.Row="3" Content="Stamina" IsChecked="{Binding Config.Potions.Stm.Enabled}" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Potions.Stm.Key}" HorizontalContentAlignment="Center" />
+                                        <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding Config.Potions.Stm.BelowPercent}" />
+                                        <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding Config.Potions.Stm.CooldownMs}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Combat -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
+                                    <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
+                                    <CheckBox Content="Usar a skill do botão direito quando pronta" IsChecked="{Binding Config.Combat.RightSkill.Enabled}" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Mana mínima p/ skill direita (%)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Column="2" Text="{Binding Config.Combat.RightSkill.MinMpPercent}" />
+
+                                        <TextBlock Grid.Row="1" Text="Alcance da busca (px, largura × altura)" Style="{StaticResource Label}"
+                                                   ToolTip="Área em volta do personagem onde o mouse procura mobs. Maior = vai atrás de mobs mais longe." />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Targeting.RadiusX}" />
+                                        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding Config.Targeting.RadiusY}" />
+
+                                        <TextBlock Grid.Row="2" Text="Desistir do alvo sem dano após (s)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding Config.Combat.NoProgressSeconds}" />
+                                    </Grid>
+
+                                    <CheckBox Content="Atacar quem me ataca de longe" IsChecked="{Binding Config.Combat.UnderAttack.Enabled}" Margin="0,8,0,0"
+                                              ToolTip="Se o HP cair sem nenhum mob perto, procura numa área maior e ataca (pode andar só nesse caso)." />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Área ampliada (px, largura × altura)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Column="1" Text="{Binding Config.Combat.UnderAttack.RadiusX}" />
+                                        <TextBox Grid.Column="2" Text="{Binding Config.Combat.UnderAttack.RadiusY}" />
+                                        <TextBlock Grid.Row="1" Text="Ativa com queda de HP de (%) em (s)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Combat.UnderAttack.HpDropPercent}" />
+                                        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding Config.Combat.UnderAttack.WindowSeconds}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Rest -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Descanso (só se a poção estiver desligada ou acabar)" Style="{StaticResource SectionTitle}" TextWrapping="Wrap" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Abaixo de" Style="{StaticResource Label}" HorizontalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="Até" Style="{StaticResource Label}" HorizontalAlignment="Center" />
+                                        <TextBlock Grid.Row="1" Text="HP (%)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Combat.Rest.HpBelow}" />
+                                        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding Config.Combat.Rest.HpUntil}" />
+                                        <TextBlock Grid.Row="2" Text="MP (%)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Combat.Rest.MpBelow}" />
+                                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding Config.Combat.Rest.MpUntil}" />
+                                        <TextBlock Grid.Row="3" Text="Tempo máximo (s)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding Config.Combat.Rest.MaxSeconds}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Safety -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Segurança" Style="{StaticResource SectionTitle}" />
+                                    <CheckBox Content="Anti-andada (corta se o personagem andar)" IsChecked="{Binding Config.Safety.StopWalking}" />
+                                    <CheckBox Content="Simular (não envia teclas nem cliques)" IsChecked="{Binding Config.Safety.DryRun}" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="90" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Parar sem progresso após (s)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Column="1" Text="{Binding Config.Safety.WatchdogSeconds}" />
+                                        <TextBlock Grid.Row="1" Text="Tecla pausar / retomar" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Hotkeys.PauseResume}" HorizontalContentAlignment="Center" />
+                                        <TextBlock Grid.Row="2" Text="Tecla encerrar" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Hotkeys.Quit}" HorizontalContentAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

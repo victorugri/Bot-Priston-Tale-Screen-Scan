@@ -122,7 +122,7 @@ public sealed class BotRunner
     {
         if (State == RunnerState.Stopped) return;
 
-        if (_control.QuitRequested) { Stop("quit hotkey"); return; }
+        if (_control.QuitRequested) { Stop(_control.QuitReason); return; }
         if (!_window.Exists) { Stop("game window closed"); return; }
         if (_control.Paused) { Enter(RunnerState.Paused, "pause hotkey"); return; }
         if (!_window.IsForeground || _window.IsMinimized) { Enter(RunnerState.FocusLost, "game lost focus"); return; }

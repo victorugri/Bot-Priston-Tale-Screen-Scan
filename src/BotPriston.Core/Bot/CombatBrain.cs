@@ -68,6 +68,7 @@ public sealed class CombatBrain
 
     public BrainState State { get; private set; } = BrainState.Recover;
     public int Kills => _killTimes.Count;
+    public double AverageKillSeconds => _killTimes.Count == 0 ? 0 : _killTimes.Average(t => t.TotalSeconds);
     public int GivenUp { get; private set; }
 
     /// <summary>Right-skill casts, confirmed by its icon turning gray.</summary>

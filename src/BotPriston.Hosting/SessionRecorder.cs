@@ -3,7 +3,7 @@ using BotPriston.Core.Vision;
 using BotPriston.Platform.Window;
 using OpenCvSharp;
 
-namespace BotPriston.App;
+namespace BotPriston.Hosting;
 
 /// <summary>
 /// Saves every frame the bot acts on (JPEG) with its state drawn on top: runner/brain state, the

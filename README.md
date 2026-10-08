@@ -32,7 +32,25 @@ Numa sessão real de 11 minutos foram **159 mobs abatidos, 3,2 s cada em média*
 4. **Não use o Snap do Windows** (arrastar a janela para a borda, ou Win+seta) na janela do jogo, porque ele muda o tamanho dela. Para pôr o jogo à direita e deixar espaço para o terminal à esquerda, use o comando `layout`.
 5. Desligue overlays de FPS/GPU (MSI Afterburner, RivaTuner), porque eles aparecem dentro da imagem do jogo.
 
-## Uso rápido
+## Uso rápido: janela (V2)
+
+No terminal de administrador, na pasta do projeto:
+
+```bash
+dotnet run --project src/BotPriston.Ui
+```
+
+A janela é estreita, para caber à esquerda do jogo:
+
+- **Aba Bot:** status (jogo encontrado no tamanho certo, administrador), botões **▶ Iniciar / ⏸ Pausar / ■ Parar**, números da sessão (mobs, tempo por mob, skill direita, desistências, andadas cortadas, atacantes distantes), barras de HP/MP/STM e o log ao vivo.
+  - **Ajustar janela** faz o mesmo que o comando `layout`.
+  - **Reabrir como admin** aparece se a janela não estiver como administrador.
+  - **Iniciar** salva os ajustes, traz o jogo para frente e começa. F12 e Ctrl+F12 continuam valendo.
+- **Aba Ajustes:** os ajustes do dia a dia (poções, combate, skill direita, alcance da busca, ataque de quem bate de longe, descanso, segurança, teclas). Só dá para mudar com o bot parado.
+
+**Como os ajustes são guardados:** o `botconfig.json` tem todos os padrões, com comentários, e fica no git. O que você muda na janela vai para o **`settings.json`**, que fica fora do git e guarda só as diferenças. O bot (janela ou terminal) junta os dois ao iniciar. **Restaurar padrões** apaga o `settings.json`.
+
+## Uso rápido: terminal
 
 Sempre a partir da pasta do projeto (`D:\Projetos\BotPriston`), no terminal de administrador:
 
@@ -176,7 +194,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 138 testes, todos sem precisar do jogo:
+São 145 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor e estado das skills. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa.
 
@@ -188,7 +206,9 @@ São 138 testes, todos sem precisar do jogo:
 |---|---|
 | `src/BotPriston.Core` | Tudo o que não depende do Windows: config, visão (detectores), busca de alvo, poções, máquina de estados, runner. Testável offline. |
 | `src/BotPriston.Platform` | Windows: achar a janela, captura (Windows.Graphics.Capture com fallback BitBlt), `SendInput`, hotkeys, privilégio de administrador, `layout`. |
-| `src/BotPriston.App` | O executável `BotPriston.exe` e os comandos. |
+| `src/BotPriston.Hosting` | Monta um bot rodando (`BotSession`): acha o jogo, cria captura/visão/input/cérebro e roda o loop numa thread própria. Usado pelo terminal e pela janela. |
+| `src/BotPriston.App` | O executável de terminal `BotPriston.exe` e os comandos. |
+| `src/BotPriston.Ui` | A janela `BotPristonUi.exe` (WPF). |
 | `tests/BotPriston.Tests` | Testes xUnit. |
 | `templates/` | Imagens de referência (letras do menu). |
 | `samples/` | Prints do jogo, gabarito dos testes, calibrações e gravações. |
@@ -219,7 +239,9 @@ Pontos de extensão já previstos:
 - [ ] Rotação de skills (mais skills além do botão direito).
 - [ ] Voltar à cidade para reabastecer.
 - [ ] Perfis por mapa (quais mobs atacar, alcance, poções).
-- [ ] Interface gráfica.
+- [x] Interface gráfica, primeira versão (V2): ajustes do dia a dia, Iniciar/Pausar/Parar, números e log.
+- [ ] Interface: prévia ao vivo do que o bot enxerga (o overlay do `debug`) dentro da janela.
+- [ ] Perfis por resolução (ex.: 1280x720), para o jogo ocupar menos espaço.
 
 ### Melhorias menores
 - [ ] Busca mais rápida: o bot espera 80 ms em cada ponto, mas o cursor reage em ~11 ms (`Targeting.HoverDelayMs` pode cair para ~30).

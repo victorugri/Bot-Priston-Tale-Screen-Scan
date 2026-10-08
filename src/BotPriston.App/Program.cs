@@ -32,7 +32,8 @@ static int Run(string[] args)
     BotConfig config;
     try
     {
-        config = ConfigLoader.Load(configPath);
+        // botconfig.json (defaults) + settings.json (what the UI changed), if present.
+        config = ConfigStore.Load(configPath);
     }
     catch (ConfigException ex)
     {

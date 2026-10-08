@@ -10,6 +10,29 @@ public sealed class VisionConfig
     public TargetPanelConfig TargetPanel { get; set; } = new();
     public CursorConfig Cursor { get; set; } = new();
     public SkillOrbsConfig SkillOrbs { get; set; } = new();
+    public MotionConfig Motion { get; set; } = new();
+}
+
+/// <summary>Walking detection from the ground sliding between frames (see MotionDetector).</summary>
+public sealed class MotionConfig
+{
+    /// <summary>Ground areas away from the character, monsters near it, and the HUD.</summary>
+    public List<PixelRect> Boxes { get; set; } = [];
+
+    /// <summary>Images are shrunk by this factor before comparing (speed).</summary>
+    public double Downscale { get; set; } = 0.5;
+
+    /// <summary>Minimum ground shift between two frames to count as movement.</summary>
+    public double MinShiftPx { get; set; } = 2.5;
+
+    /// <summary>A box agrees with the median shift if it is within this many pixels of it.</summary>
+    public double AgreementPx { get; set; } = 2;
+
+    /// <summary>Boxes that must agree (protects against a monster moving through one box).</summary>
+    public int MinAgreeingBoxes { get; set; } = 3;
+
+    /// <summary>Frames in a row with movement before it is called walking (hit effects shake 1 frame).</summary>
+    public int ConsecutiveFrames { get; set; } = 3;
 }
 
 public sealed class SkillOrbsConfig

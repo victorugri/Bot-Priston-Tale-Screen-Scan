@@ -75,6 +75,7 @@ static int Run(string[] args)
             "press" => InputTestCommands.Press(ctx, cmd, cancel.Token),
             "mouse" => InputTestCommands.Mouse(ctx, cmd, cancel.Token),
             "layout" => LayoutCommand.Run(ctx, cmd),
+            "motion" => MotionCommand.Run(ctx, cmd),
             "probe" => TargetingCommands.Probe(ctx, cmd, cancel.Token),
             "find" => TargetingCommands.Find(ctx, cmd, cancel.Token),
             _ => throw new UsageException($"Unknown command '{cmd.Command}'."),
@@ -124,11 +125,15 @@ static void PrintHelp() => Console.WriteLine("""
           --csv <file>          Also write the results as CSV
           --overlay <dir>       Also save each image with the detections drawn
           --sweep               With --overlay: also draw the hover-sweep points and exclusions
+      motion                  Replay a recording through the walking detector
+          --source <folder>     e.g. samples/record_20261007_224549
       crop                    Cut a template out of a screenshot
           --source <image> --roi x,y,w,h --out <file.png>
       run                     Run the bot: find monsters, attack until they die, use potions, rest
           --dry-run             Detect and log decisions, send no input
           --no-combat           Potions only (same as Combat.Enabled = false)
+          --no-right-skill      Never use the right-click skill (same as Combat.RightSkill.Enabled = false)
+          --record              Save every frame (JPEG, with the bot's state drawn) to samples/record_*
                                 Hotkeys: Hotkeys.PauseResume (F12) pause/resume, Hotkeys.Quit (Ctrl+F12) quit
       press                   Send a key to the game (waits until the game has focus)
           --key <key> [--count <n>] [--wait <s>]

@@ -93,6 +93,16 @@ public sealed class SendInputSink(GameWindow window, InputConfig config, ILogger
         return MouseUp(button);
     }
 
+    public void ForceReleaseButtons()
+    {
+        // An "up" sent while another window has focus may never reach the game; wait until it is ours.
+        if (!window.Exists || !window.IsForeground) return;
+        Send(MouseInput(InputNative.MOUSEEVENTF_LEFTUP));
+        Send(MouseInput(InputNative.MOUSEEVENTF_RIGHTUP));
+        _heldButtons.Clear();
+        log.Verbose("Forced both mouse buttons up");
+    }
+
     public void ReleaseAll()
     {
         foreach (var button in _heldButtons.ToList())

@@ -29,6 +29,12 @@ public sealed class SafetyConfig
 
     /// <summary>Stop the bot if the character's HP bar reads empty for this long (the character died).</summary>
     public double DeadHpSeconds { get; set; } = 2;
+
+    /// <summary>
+    /// The character must never walk: when the ground slides for a few frames (Vision.Motion), force both
+    /// mouse buttons up, drop the target and log what the bot was doing.
+    /// </summary>
+    public bool StopWalking { get; set; } = true;
 }
 
 public sealed class BotLoopConfig

@@ -24,4 +24,11 @@ public interface IInputSink
 
     /// <summary>Releases any key or button this sink is holding. Safe to call at any time.</summary>
     void ReleaseAll();
+
+    /// <summary>
+    /// Sends "button up" for both mouse buttons even if this sink believes they are up, so the game
+    /// can't be left thinking a button is still held (e.g. an up that arrived while it had no focus).
+    /// Only sent while the game is in the foreground.
+    /// </summary>
+    void ForceReleaseButtons();
 }

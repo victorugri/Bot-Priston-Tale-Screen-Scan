@@ -42,6 +42,9 @@ public sealed class PotionManager
 
     public bool IsOutOfStock(PotionKind kind) => _slots[kind].OutOfStockUntil > _time.GetUtcNow();
 
+    /// <summary>Enabled and not believed out of stock: this potion will take care of its bar.</summary>
+    public bool IsAvailable(PotionKind kind) => _slots[kind].Config.Enabled && !IsOutOfStock(kind);
+
     /// <summary>The potion to use now, or null. Also updates the effect bookkeeping of past uses.</summary>
     public PotionKind? Decide(PlayerBars bars)
     {

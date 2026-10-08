@@ -112,6 +112,14 @@ public static class ConfigLoader
             errors.Add("Vision.Cursor needs EnemyColors and NeutralColors.");
         if (cursor.MinEnemyPixels < 1 || cursor.MinNeutralPixels < 1) errors.Add("Vision.Cursor.Min*Pixels must be >= 1.");
 
+        var motion = config.Vision.Motion;
+        foreach (var box in motion.Boxes) CheckRoi(box, "Vision.Motion.Boxes");
+        if (config.Safety.StopWalking && motion.Boxes.Count < motion.MinAgreeingBoxes)
+            errors.Add("Vision.Motion: Safety.StopWalking needs at least MinAgreeingBoxes boxes.");
+        if (motion.Downscale is <= 0 or > 1) errors.Add("Vision.Motion.Downscale must be in (0, 1].");
+        if (motion.MinShiftPx <= 0 || motion.AgreementPx <= 0) errors.Add("Vision.Motion.MinShiftPx/AgreementPx must be positive.");
+        if (motion.ConsecutiveFrames < 1 || motion.MinAgreeingBoxes < 1) errors.Add("Vision.Motion.ConsecutiveFrames/MinAgreeingBoxes must be >= 1.");
+
         var targeting = config.Targeting;
         if (targeting.Anchor.X < 0 || targeting.Anchor.Y < 0 || targeting.Anchor.X >= client.Width || targeting.Anchor.Y >= client.Height)
             errors.Add("Targeting.Anchor must be inside the client area.");
@@ -134,7 +142,14 @@ public static class ConfigLoader
             errors.Add("Combat.Rest.MaxSeconds must be shorter than Safety.WatchdogSeconds.");
         if (combat.Loot.Enabled) errors.Add("Combat.Loot.Enabled: looting is not implemented yet.");
         if (combat.RightSkill.MinMpPercent is < 0 or > 100) errors.Add("Combat.RightSkill.MinMpPercent must be 0-100.");
-        if (combat.RightSkill.RecheckMs < 0) errors.Add("Combat.RightSkill.RecheckMs must be >= 0.");
+        var underAttack = combat.UnderAttack;
+        if (underAttack.HpDropPercent <= 0 || underAttack.WindowSeconds <= 0)
+            errors.Add("Combat.UnderAttack.HpDropPercent and WindowSeconds must be positive.");
+        if (underAttack.Enabled && (underAttack.RadiusX <= config.Targeting.RadiusX || underAttack.RadiusY <= config.Targeting.RadiusY))
+            errors.Add("Combat.UnderAttack.RadiusX/RadiusY must be larger than Targeting.RadiusX/RadiusY.");
+        if (underAttack.Step < 10) errors.Add("Combat.UnderAttack.Step must be >= 10.");
+        if (combat.RightSkill.HoldMaxMs <= 0) errors.Add("Combat.RightSkill.HoldMaxMs must be positive.");
+        if (combat.RightSkill.RetryMs < 0) errors.Add("Combat.RightSkill.RetryMs must be >= 0.");
 
         foreach (var (orb, name) in new[] { (config.Vision.SkillOrbs.Left, "Left"), (config.Vision.SkillOrbs.Right, "Right") })
         {

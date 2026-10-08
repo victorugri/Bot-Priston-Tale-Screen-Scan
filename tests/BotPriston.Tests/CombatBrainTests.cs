@@ -145,6 +145,49 @@ public class CombatBrainTests : IDisposable
     }
 
     [Fact]
+    public void CursorOffTheMonster_ReleasesImmediately_SoTheCharacterDoesNotWalk()
+    {
+        var brain = Attacking();
+        _cursor.Kind = CursorKind.Neutral;
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80)); // first frame off the monster
+
+        Assert.Equal(["down Left", "up Left"], _input.Actions);
+        Assert.Single(_finder.Calls); // no new search yet: it may be a flicker
+    }
+
+    [Fact]
+    public void CursorFlicker_HoldsTheAttackAgain_WithoutSearching()
+    {
+        var brain = Attacking();
+        _cursor.Kind = CursorKind.Neutral;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80));
+
+        _cursor.Kind = CursorKind.Enemy;
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 75));
+
+        Assert.Equal(["down Left", "up Left", "down Left"], _input.Actions);
+        Assert.Single(_finder.Calls);
+        Assert.Equal(BrainState.Attack, brain.State);
+    }
+
+    [Fact]
+    public void MonsterMovedBeforeTheFirstClick_NoClickOnTheGround()
+    {
+        var brain = Brain();
+        _finder.WillFind(Monster);
+        Tick(brain); // Recover -> SearchTarget
+        Tick(brain); // found -> Engage
+        _cursor.Kind = CursorKind.Neutral;
+
+        Tick(brain); // Engage: the cursor is on the ground now
+
+        Assert.Empty(_input.Actions);
+        Assert.Equal(BrainState.SearchTarget, brain.State);
+    }
+
+    [Fact]
     public void MonsterGone_BackToSearching()
     {
         var brain = Attacking();
@@ -220,6 +263,29 @@ public class CombatBrainTests : IDisposable
     }
 
     [Fact]
+    public void LowHp_WithHpPotionAvailable_KeepsFighting()
+    {
+        // Seen in game: HP potion at 30% and rest at 40% made the bot stand still instead of drinking.
+        var brain = Brain();
+        brain.PotionAvailable = kind => kind == PotionKind.Hp;
+
+        Tick(brain, hp: 36);
+
+        Assert.Equal(BrainState.SearchTarget, brain.State);
+    }
+
+    [Fact]
+    public void LowHp_WithHpPotionOutOfStock_Rests()
+    {
+        var brain = Brain();
+        brain.PotionAvailable = _ => false;
+
+        Tick(brain, hp: 36);
+
+        Assert.Equal(BrainState.Recover, brain.State);
+    }
+
+    [Fact]
     public void Rest_EndsAfterMaxSeconds()
     {
         var brain = Brain();
@@ -232,30 +298,70 @@ public class CombatBrainTests : IDisposable
     }
 
     [Fact]
-    public void RightSkillReady_IsUsedOnTheTarget_ThenLeftAttackResumes()
+    public void RightSkillReady_RightHeldUntilIconTurnsGray_ThenLeftAttackResumes()
     {
         var brain = Attacking();
 
         Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+        Assert.Equal(["down Left", "up Left", "down Right"], _input.Actions);
 
-        Assert.Equal(["down Left", "up Left", "click Right", "down Left"], _input.Actions);
+        _time.Advance(TimeSpan.FromMilliseconds(600));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 85), rightReady: true); // not cast yet: keep holding
+        Assert.Equal(3, _input.Actions.Count);
+
+        _time.Advance(TimeSpan.FromMilliseconds(300));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 60), rightReady: false); // icon gray: cast done
+
+        Assert.Equal(["down Left", "up Left", "down Right", "up Right", "down Left"], _input.Actions);
         Assert.Equal(1, brain.RightSkillUses);
         Assert.Equal(BrainState.Attack, brain.State);
     }
 
     [Fact]
-    public void RightSkill_NotSpammedWhileTheIconTurnsGray()
+    public void RightHeldWithoutEffect_CountsAMiss_AndRetriesLater()
     {
         var brain = Attacking();
         Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
 
-        _time.Advance(TimeSpan.FromMilliseconds(1000));
-        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true); // icon not gray yet
-        Assert.Equal(1, brain.RightSkillUses);
+        _time.Advance(TimeSpan.FromMilliseconds(2500));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true); // held the max, still in color
+        Assert.Equal(1, brain.RightSkillMisses);
+        Assert.Equal("down Left", _input.Actions[^1]);
 
         _time.Advance(TimeSpan.FromMilliseconds(500));
-        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), rightReady: true); // still in color: try again
-        Assert.Equal(2, brain.RightSkillUses);
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), rightReady: true); // too soon to retry
+        Assert.Equal(1, _input.Actions.Count(a => a == "down Right"));
+
+        _time.Advance(TimeSpan.FromMilliseconds(500));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 60), rightReady: true);
+        Assert.Equal(2, _input.Actions.Count(a => a == "down Right"));
+    }
+
+    [Fact]
+    public void TargetDiesWhileHoldingRight_ReleasesIt_AndLeftIsNotPressedAgain()
+    {
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 10), rightReady: true);
+
+        Tick(brain, FakeVision.Target(TargetStatus.Dead, 0));
+        Tick(brain); // Recover
+
+        Assert.Equal(1, brain.Kills);
+        Assert.Equal(["down Left", "up Left", "down Right", "up Right"], _input.Actions);
+    }
+
+    [Fact]
+    public void MonsterMovesWhileHoldingRight_BothButtonsReleasedBeforeMovingTheMouse()
+    {
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+        _cursor.Kind = CursorKind.Neutral;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+        _time.Advance(TimeSpan.FromMilliseconds(500));
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+
+        Assert.Equal(["down Left", "up Left", "down Right", "up Right"], _input.Actions);
     }
 
     [Fact]
@@ -292,6 +398,84 @@ public class CombatBrainTests : IDisposable
         _config.RightSkill.Enabled = false;
         Tick(brain, FakeVision.Target(TargetStatus.Engaged, 85), mp: 15, rightReady: true);
         Assert.Equal(0, brain.RightSkillUses);
+    }
+
+    private CombatBrain BrainWithWideSearch(ScriptedFinder wide) =>
+        new(_config, _finder, _cursor, _input, _time, TestLog.Silent, () => _progress++, wide);
+
+    [Fact]
+    public void NothingInReach_HpSteady_NoWiderSearch()
+    {
+        var wide = new ScriptedFinder();
+        var brain = BrainWithWideSearch(wide);
+
+        Tick(brain, hp: 90); // Recover -> SearchTarget
+        Tick(brain, hp: 90); // close search: nothing
+
+        Assert.Empty(wide.Calls);
+    }
+
+    [Fact]
+    public void NothingInReach_LosingHp_SearchesWider_AndMayWalkToTheAttacker()
+    {
+        // Seen in game: two Cão Abelha 250-300 px away kept hitting the character with bees.
+        var wide = new ScriptedFinder();
+        var attacker = new PixelPoint(560, 300);
+        wide.WillFind(attacker);
+        var brain = BrainWithWideSearch(wide);
+
+        Tick(brain, hp: 90); // Recover -> SearchTarget
+        _time.Advance(TimeSpan.FromSeconds(2));
+        Tick(brain, hp: 84); // close search finds nothing, HP fell 6% in 2 s -> wide search
+        Assert.Single(wide.Calls);
+        Assert.Equal(BrainState.Engage, brain.State);
+        Assert.Equal(attacker, brain.Aim);
+
+        Tick(brain, hp: 84); // Engage -> Attack
+        Assert.True(brain.AllowWalking);
+        Assert.Equal(1, brain.WideTargets);
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 50), hp: 84);
+        Tick(brain, FakeVision.Target(TargetStatus.Dead, 0), hp: 84);
+        Assert.Equal(1, brain.Kills);
+        Assert.False(brain.AllowWalking); // back to standing still after that one target
+    }
+
+    [Fact]
+    public void OldHpDrop_OutsideTheWindow_DoesNotCount()
+    {
+        var wide = new ScriptedFinder();
+        var brain = BrainWithWideSearch(wide);
+
+        Tick(brain, hp: 90);
+        Tick(brain, hp: 80); // dropped, but the close search ran before... next search is later
+        _time.Advance(TimeSpan.FromSeconds(5)); // the drop leaves the 4 s window
+        Tick(brain, hp: 80);
+        wide.Calls.Clear();
+        _time.Advance(TimeSpan.FromSeconds(2));
+
+        Tick(brain, hp: 80); // steady for the whole window
+
+        Assert.Empty(wide.Calls);
+    }
+
+    [Fact]
+    public void DistantTargetMoves_IsReacquiredWithTheWideSearch()
+    {
+        var wide = new ScriptedFinder();
+        wide.WillFind(new PixelPoint(560, 300));
+        var brain = BrainWithWideSearch(wide);
+        Tick(brain, hp: 90);
+        _time.Advance(TimeSpan.FromSeconds(1));
+        Tick(brain, hp: 80);
+        Tick(brain, hp: 80); // Attack
+        _cursor.Kind = CursorKind.Neutral;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), hp: 80);
+        _time.Advance(TimeSpan.FromMilliseconds(500));
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), hp: 80);
+
+        Assert.Equal(new PixelPoint(560, 300), wide.Calls[^1].Near);
     }
 
     [Fact]

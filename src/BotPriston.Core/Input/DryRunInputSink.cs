@@ -37,4 +37,6 @@ public sealed class DryRunInputSink(ILogger log) : IInputSink
     }
 
     public void ReleaseAll() { }
+
+    public void ForceReleaseButtons() => log.Debug("[dry-run] force release of both mouse buttons");
 }

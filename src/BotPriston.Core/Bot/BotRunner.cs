@@ -2,6 +2,7 @@
 using BotPriston.Core.Config;
 using BotPriston.Core.Input;
 using BotPriston.Core.Vision;
+using OpenCvSharp;
 using Serilog;
 
 namespace BotPriston.Core.Bot;
@@ -42,6 +43,9 @@ public sealed class BotRunner
     private readonly CombatBrain? _brain;
     private CancellationToken _runCancel = CancellationToken.None;
     private DateTimeOffset? _hpEmptySince;
+    private readonly MotionDetector? _motion;
+    private DateTimeOffset? _walkingSince;
+    private double _walkDx, _walkDy;
 
     /// <param name="brainFactory">
     /// Builds the combat brain, given the callback it must call on progress (damage dealt, kill).
@@ -63,9 +67,19 @@ public sealed class BotRunner
         _progressWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.WatchdogSeconds), time);
         _hudWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.HudLostStopSeconds), time);
         _brain = brainFactory?.Invoke(_progressWatchdog.Kick);
+        if (_brain is not null)
+            _brain.PotionAvailable = _potions.IsAvailable;
+        if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0)
+            _motion = new MotionDetector(config.Vision.Motion);
     }
 
+    /// <summary>Times the character was caught walking.</summary>
+    public int WalkEpisodes { get; private set; }
+
     public CombatBrain? Brain => _brain;
+
+    /// <summary>Called at the end of every tick that saw the game (frame + what was perceived), e.g. to record a session.</summary>
+    public Action<Mat, VisionSnapshot>? AfterTick { get; set; }
     public RunnerState State { get; private set; } = RunnerState.Starting;
     public string? StopReason { get; private set; }
     public VisionSnapshot? LastSnapshot { get; private set; }
@@ -99,6 +113,7 @@ public sealed class BotRunner
             _log.Information("Bot stopped: {Reason}", StopReason ?? "unknown");
             if (_brain is not null)
                 _log.Information("Session: {Summary}", _brain.Summary);
+            _motion?.Dispose();
         }
     }
 
@@ -128,6 +143,18 @@ public sealed class BotRunner
 
         var snapshot = _vision.Analyze(frame.Image);
         LastSnapshot = snapshot;
+        try
+        {
+            TickWithFrame(frame.Image, snapshot);
+        }
+        finally
+        {
+            AfterTick?.Invoke(frame.Image, snapshot);
+        }
+    }
+
+    private void TickWithFrame(Mat image, VisionSnapshot snapshot)
+    {
         if (!snapshot.Hud.Visible || snapshot.Bars is null)
         {
             CheckHudLost("HUD not visible");
@@ -146,6 +173,9 @@ public sealed class BotRunner
         if (CharacterDied(snapshot.Bars))
             return;
 
+        if (CheckWalking(image))
+            return;
+
         // Survival first: a potion pre-empts anything else this tick.
         if (_potions.Decide(snapshot.Bars) is { } potion)
         {
@@ -162,7 +192,53 @@ public sealed class BotRunner
         }
 
         using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(_runCancel, _control.Interrupt);
-        _brain.Tick(snapshot, frame.Image, interrupt.Token);
+        _brain.Tick(snapshot, image, interrupt.Token);
+    }
+
+    /// <summary>
+    /// The character must never walk. When the ground keeps sliding (it walks), force both mouse buttons
+    /// up, make the brain drop its target, and don't act until it stands still again. Returns true while walking.
+    /// </summary>
+    private bool CheckWalking(Mat image)
+    {
+        if (_motion is null) return false;
+        var motion = _motion.Update(image);
+
+        // Chasing a distant attacker found by the wider search: walking is allowed for that one target.
+        if (_brain?.AllowWalking == true)
+        {
+            _walkingSince = null;
+            return false;
+        }
+
+        if (_walkingSince is { } since)
+        {
+            if (motion.Moving)
+            {
+                _walkDx += motion.ShiftX;
+                _walkDy += motion.ShiftY;
+                _input.ForceReleaseButtons();
+                return true;
+            }
+            _log.Information("Character stopped walking after {Ms:F0} ms (ground moved ~{Distance:F0} px)",
+                (_time.GetUtcNow() - since).TotalMilliseconds, Math.Sqrt(_walkDx * _walkDx + _walkDy * _walkDy));
+            _walkingSince = null;
+            return false;
+        }
+
+        if (!motion.Walking) return false;
+
+        _input.ForceReleaseButtons();
+        WalkEpisodes++;
+        _walkingSince = _time.GetUtcNow();
+        _walkDx = motion.ShiftX;
+        _walkDy = motion.ShiftY;
+        var context = _brain is null
+            ? "no combat"
+            : $"brain {_brain.State}, held [{(_brain.HoldingLeft ? "L" : "")}{(_brain.HoldingRight ? "R" : "")}], aim {_brain.Aim}";
+        _log.Warning("Character is WALKING ({Motion}) while {Context}: buttons forced up, target dropped", motion, context);
+        _brain?.OnWalkingDetected(context);
+        return true;
     }
 
     /// <summary>An empty HP bar for a while means the character is dead: stop before doing anything silly.</summary>
@@ -210,6 +286,15 @@ public sealed class BotRunner
 
         _log.Information("State {From} -> {To} ({Reason})", State.ToString(), next.ToString(), reason);
         State = next;
+
+        // Back in control with the game focused: make sure the game doesn't think a button is still
+        // held (an "up" sent while it had no focus may have been lost), and restart motion history.
+        if (next == RunnerState.Running)
+        {
+            _input.ForceReleaseButtons();
+            _motion?.Reset();
+            _walkingSince = null;
+        }
     }
 
     private void Stop(string reason)

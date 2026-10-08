@@ -86,6 +86,22 @@
       "MinNeutralPixels": 10
     },
 
+    // Walking detection: the camera follows the character, so when it walks the whole ground slides.
+    // Ground boxes away from the character and the HUD are compared frame to frame.
+    "Motion": {
+      "Boxes": [
+        { "X": 80,   "Y": 150, "Width": 420, "Height": 150 },
+        { "X": 1020, "Y": 220, "Width": 360, "Height": 150 },
+        { "X": 80,   "Y": 560, "Width": 220, "Height": 120 },
+        { "X": 1000, "Y": 560, "Width": 380, "Height": 120 }
+      ],
+      "Downscale": 0.5,
+      "MinShiftPx": 2.5,          // ground shift per frame that counts as movement
+      "AgreementPx": 2,
+      "MinAgreeingBoxes": 3,      // most boxes must see the same shift (a monster in one box doesn't count)
+      "ConsecutiveFrames": 3      // hit effects shake a single frame; walking lasts
+    },
+
     // Round skill icons between the HP and MP tubes: in color = ready, gray = recharging.
     "SkillOrbs": {
       "Left":  { "Center": { "X": 374, "Y": 862 }, "Radius": 11, "MinSaturation": 100, "MinColoredFraction": 0.5 },
@@ -105,7 +121,8 @@
     "DryRun": false,
     "WatchdogSeconds": 120,     // stop if no progress for this long
     "HudLostStopSeconds": 20,   // stop if the HUD is gone this long (death, disconnect, loading)
-    "DeadHpSeconds": 2          // stop if the character's HP bar is empty this long
+    "DeadHpSeconds": 2,         // stop if the character's HP bar is empty this long
+    "StopWalking": true         // character walking (ground slides) -> force buttons up, drop the target, log why
   },
 
   "Bot": {
@@ -124,15 +141,15 @@
   },
 
   // Hover sweep used to find monsters: the mouse visits a hexagonal grid of points inside an
-  // ellipse around the character (nearest first) until the target panel appears.
+  // ellipse around the character (nearest first) until the cursor gem turns red.
   "Targeting": {
     "Anchor": { "X": 800, "Y": 465 },   // where the character stands on screen
-    "RadiusX": 450,                     // search ellipse half-axes: monsters are usually close to the character
-    "RadiusY": 300,
-    "MinRadius": 60,                    // skip the character itself
-    "Step": 75,                         // grid spacing; must be smaller than a monster on screen
+    "RadiusX": 130,                     // search ellipse half-axes: monsters close to the character
+    "RadiusY": 95,                      // (Combat.UnderAttack searches farther only when losing HP)
+    "MinRadius": 35,                    // skip the character itself (monsters stick to it, so keep this small)
+    "Step": 60,                         // grid spacing; must be smaller than a monster on screen
     "EdgeMargin": 15,
-    "HoverDelayMs": 80,                 // wait after each move before reading the panel
+    "HoverDelayMs": 80,                 // wait after each move before reading the cursor gem
     "ConfirmDelayMs": 60,               // re-check a hit after this long
     "Exclusions": [                     // the mouse never goes here
       { "X": 0,    "Y": 0,   "Width": 70,  "Height": 70 },    // top-left icon
@@ -149,15 +166,24 @@
     "Enabled": true,
     "LostTargetGraceMs": 400,     // cursor off the monster this long = it moved
     "ReacquireRadius": 150,       // then look for it this close to where it was
-    "NoProgressSeconds": 15,      // give up a target whose HP doesn't drop for this long
+    "NoProgressSeconds": 5,       // give up a target whose HP doesn't drop for this long
     "MaxTargetSeconds": 60,       // give up a target after this long anyway
     "SearchRetryMs": 1500,        // wait between searches when nothing was found
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,
       "MinMpPercent": 0,          // 0 = always when ready
-      "RecheckMs": 1500           // after a use, wait before checking the icon again
+      "HoldMaxMs": 2500,          // hold the right button until the icon turns gray, at most this long
+      "RetryMs": 1000             // after a hold without effect, use the left attack this long before retrying
     },
-    "Rest": {                     // between fights, if potions can't keep up: stand still and regenerate
+    "UnderAttack": {              // losing HP with nothing in reach (monsters attacking from afar): search a wider area
+      "Enabled": true,
+      "HpDropPercent": 3,         // HP fell at least this much...
+      "WindowSeconds": 4,         // ...within this many seconds
+      "RadiusX": 450,             // wider search area; walking is allowed while attacking what it finds
+      "RadiusY": 300,
+      "Step": 75
+    },
+    "Rest": {                     // between fights, only for a bar whose potion is disabled or ran out: stand still and regenerate
       "HpBelow": 40, "HpUntil": 80,
       "MpBelow": 10, "MpUntil": 50,
       "MaxSeconds": 60

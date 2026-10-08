@@ -20,6 +20,8 @@ internal sealed class FakeInput : IInputSink
     public bool MouseUp(MouseButton button) => Record($"up {button}");
     public bool Click(MouseButton button) => Record($"click {button}");
     public void ReleaseAll() => ReleaseAllCalls++;
+    public int ForceReleaseCalls { get; private set; }
+    public void ForceReleaseButtons() => ForceReleaseCalls++;
 
     private bool Record(string action)
     {

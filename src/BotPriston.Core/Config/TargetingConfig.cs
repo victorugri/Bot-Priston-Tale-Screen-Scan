@@ -29,4 +29,14 @@ public sealed class TargetingConfig
 
     /// <summary>HUD areas where the mouse must never go (bars, hotbar, chat, minimap, target panel...).</summary>
     public List<PixelRect> Exclusions { get; set; } = [];
+
+    /// <summary>Same settings with a different search area (e.g. the wider "under attack" search).</summary>
+    public TargetingConfig WithArea(int radiusX, int radiusY, int step)
+    {
+        var copy = (TargetingConfig)MemberwiseClone();
+        copy.RadiusX = radiusX;
+        copy.RadiusY = radiusY;
+        copy.Step = step;
+        return copy;
+    }
 }

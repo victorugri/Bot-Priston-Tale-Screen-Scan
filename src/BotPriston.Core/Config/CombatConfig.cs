@@ -6,7 +6,11 @@ public sealed class CombatConfig
     /// <summary>False = survival only (potions), as in stage 3.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>The cursor may leave the monster briefly (animations); only after this long is the target considered lost.</summary>
+    /// <summary>
+    /// The cursor may leave the monster briefly (animations); only after this long is the target considered
+    /// lost and searched for again. The buttons are released immediately either way: holding a button over
+    /// the ground makes the character walk.
+    /// </summary>
     public int LostTargetGraceMs { get; set; } = 400;
 
     /// <summary>When the target is lost, first look for it within this distance of where it was.</summary>
@@ -22,6 +26,7 @@ public sealed class CombatConfig
     public int SearchRetryMs { get; set; } = 1500;
 
     public RightSkillConfig RightSkill { get; set; } = new();
+    public UnderAttackConfig UnderAttack { get; set; } = new();
     public RestConfig Rest { get; set; } = new();
     public LootConfig Loot { get; set; } = new();
 }
@@ -37,13 +42,40 @@ public sealed class RightSkillConfig
     /// <summary>Don't use it below this much mana (0 = whenever it is ready).</summary>
     public double MinMpPercent { get; set; }
 
-    /// <summary>After a use, wait this long before trying again (the icon takes a moment to turn gray).</summary>
-    public int RecheckMs { get; set; } = 1500;
+    /// <summary>
+    /// The right button is held until the icon turns gray (the cast happened), at most this long.
+    /// A short click from the bot was ignored by the game most of the time.
+    /// </summary>
+    public int HoldMaxMs { get; set; } = 2500;
+
+    /// <summary>After a hold without effect, attack with the left button this long before trying again.</summary>
+    public int RetryMs { get; set; } = 1000;
 }
 
 /// <summary>
-/// Between fights: if HP or MP is low (e.g. potions ran out), stand still until they regenerate.
-/// Rest starts below *Below and ends when every bar is at or above its *Until, or after MaxSeconds.
+/// Monsters that attack from a distance (e.g. Cão Abelha sending bees) stay outside the normal search
+/// area. When nothing is in reach but the character is losing HP, search a wider area once and attack
+/// what is found; during that attack the character is allowed to walk.
+/// </summary>
+public sealed class UnderAttackConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>"Under attack" = HP dropped at least this much (percentage points)...</summary>
+    public double HpDropPercent { get; set; } = 3;
+
+    /// <summary>...within this many seconds.</summary>
+    public double WindowSeconds { get; set; } = 4;
+
+    /// <summary>Half-axes and grid spacing of the wider search area.</summary>
+    public int RadiusX { get; set; } = 450;
+    public int RadiusY { get; set; } = 300;
+    public int Step { get; set; } = 75;
+}
+
+/// <summary>
+/// Between fights: if HP or MP is low and its potion can't help (disabled or out of stock), stand
+/// still until it regenerates. Rest starts below *Below and ends when those bars reach *Until, or after MaxSeconds.
 /// </summary>
 public sealed class RestConfig
 {

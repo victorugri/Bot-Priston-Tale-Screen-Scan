@@ -52,7 +52,7 @@ public class SweepPatternTests
 
         Assert.Equal(points.Count, points.Distinct().Count());
         // A spot inside the search area always has a probe within one grid step.
-        var spot = new PixelPoint(config.Anchor.X + 233, config.Anchor.Y - 111);
+        var spot = new PixelPoint(config.Anchor.X + config.RadiusX / 2 + 7, config.Anchor.Y - config.RadiusY / 3 - 3);
         Assert.Contains(points, p => Math.Sqrt(Math.Pow(p.X - spot.X, 2) + Math.Pow(p.Y - spot.Y, 2)) <= config.Step);
     }
 }
@@ -89,7 +89,19 @@ public class HoverTargetFinderTests : IDisposable
     private readonly Mat _greenCursor;
     private readonly Mat _redCursor;
     private readonly VisionConfig _vision = TestConfig.Load().Vision;
-    private readonly TargetingConfig _config = TestConfig.Load().Targeting;
+
+    // A wide grid of its own, so these tests don't depend on how small the user tunes the search area.
+    private readonly TargetingConfig _config = WideGrid();
+
+    private static TargetingConfig WideGrid()
+    {
+        var config = TestConfig.Load().Targeting;
+        config.RadiusX = 450;
+        config.RadiusY = 300;
+        config.MinRadius = 60;
+        config.Step = 75;
+        return config;
+    }
 
     public HoverTargetFinderTests()
     {
@@ -136,6 +148,7 @@ public class HoverTargetFinderTests : IDisposable
         public bool MouseUp(MouseButton button) => true;
         public bool Click(MouseButton button) => true;
         public void ReleaseAll() { }
+        public void ForceReleaseButtons() { }
     }
 
     private HoverTargetFinder Finder(MouseTrackingInput input, ICaptureSource capture) =>

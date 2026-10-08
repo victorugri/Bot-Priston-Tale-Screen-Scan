@@ -132,9 +132,9 @@
   // Keys: 1 = stamina, 2 = HP, 3 = mana. A potion is used when its bar is below BelowPercent.
   // Priority when several are low: HP > MP > STM.
   "Potions": {
-    "Hp":  { "Enabled": true, "Key": "2", "BelowPercent": 30, "CooldownMs": 2000 },
-    "Mp":  { "Enabled": true, "Key": "3", "BelowPercent": 10, "CooldownMs": 2000 },
-    "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 10, "CooldownMs": 2000 },
+    "Hp":  { "Enabled": true, "Key": "2", "BelowPercent": 40, "CooldownMs": 1000 },
+    "Mp":  { "Enabled": true, "Key": "3", "BelowPercent": 20, "CooldownMs": 2000 },
+    "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 20, "CooldownMs": 2000 },
     "MinGainPercent": 1.0,     // a use "worked" if the bar rose at least this much by the end of the cooldown
     "MaxFailures": 3,          // uses in a row without effect before assuming the potion ran out
     "RetryAfterSeconds": 60    // then wait this long before trying it again

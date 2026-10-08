@@ -4,3 +4,7 @@ logs/
 .vs/
 *.user
 TestResults/
+
+# Session recordings and calibration sweeps: large, analysed once, not needed by the tests
+samples/record_*/
+samples/probe_*/

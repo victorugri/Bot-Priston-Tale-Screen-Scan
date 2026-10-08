@@ -9,6 +9,28 @@ public sealed class VisionConfig
     public PlayerBarsConfig PlayerBars { get; set; } = new();
     public TargetPanelConfig TargetPanel { get; set; } = new();
     public CursorConfig Cursor { get; set; } = new();
+    public SkillOrbsConfig SkillOrbs { get; set; } = new();
+}
+
+public sealed class SkillOrbsConfig
+{
+    public SkillOrbConfig Left { get; set; } = new();
+    public SkillOrbConfig Right { get; set; } = new();
+}
+
+/// <summary>A round skill icon: in color when ready, gray while recharging.</summary>
+public sealed class SkillOrbConfig
+{
+    public PixelPoint Center { get; set; }
+
+    /// <summary>Radius of the circle sampled inside the icon (stay inside the metal ring).</summary>
+    public int Radius { get; set; } = 11;
+
+    /// <summary>A pixel counts as colored at or above this saturation (0-255).</summary>
+    public int MinSaturation { get; set; } = 100;
+
+    /// <summary>Fraction of colored pixels for the skill to count as ready (gray icons have ~0).</summary>
+    public double MinColoredFraction { get; set; } = 0.5;
 }
 
 /// <summary>The gem on the game's cursor: green over the ground, red over a monster.</summary>

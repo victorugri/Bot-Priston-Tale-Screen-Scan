@@ -41,7 +41,7 @@ public sealed class CombatBrain
     private bool _holding;
     private bool _seenAlive;
     private double? _lastTargetHp;
-    private DateTimeOffset _targetSince, _lastDamage, _nextSearchAt;
+    private DateTimeOffset _targetSince, _lastDamage, _nextSearchAt, _nextRightSkillAt;
     private DateTimeOffset? _cursorLostSince;
     private DateTimeOffset? _restingSince;
     private readonly List<TimeSpan> _killTimes = [];
@@ -61,11 +61,12 @@ public sealed class CombatBrain
     public BrainState State { get; private set; } = BrainState.Recover;
     public int Kills => _killTimes.Count;
     public int GivenUp { get; private set; }
+    public int RightSkillUses { get; private set; }
     public PixelPoint? Aim => _aim;
 
-    public string Summary => Kills == 0
-        ? $"0 kills, {GivenUp} targets given up"
-        : $"{Kills} kills (avg {_killTimes.Average(t => t.TotalSeconds):F1}s each), {GivenUp} targets given up";
+    public string Summary =>
+        (Kills == 0 ? "0 kills" : $"{Kills} kills (avg {_killTimes.Average(t => t.TotalSeconds):F1}s each)") +
+        $", {GivenUp} targets given up, right skill used {RightSkillUses}x";
 
     /// <summary>One decision. <paramref name="frame"/> is the image <paramref name="snapshot"/> came from.</summary>
     public void Tick(VisionSnapshot snapshot, Mat frame, CancellationToken interrupt)
@@ -205,6 +206,7 @@ public sealed class CombatBrain
         if (cursor.Kind == CursorKind.Enemy)
         {
             _cursorLostSince = null;
+            TryRightSkill(snapshot, now);
             return;
         }
 
@@ -225,6 +227,32 @@ public sealed class CombatBrain
         }
         if (result.Outcome != FindOutcome.Aborted)
             Go(BrainState.SearchTarget, "lost the target");
+    }
+
+    /// <summary>
+    /// Right-click skill on the target whenever its icon is in color. The cursor is known to be on the
+    /// monster; the left button is released for the click and held again right after.
+    /// </summary>
+    private void TryRightSkill(VisionSnapshot snapshot, DateTimeOffset now)
+    {
+        var skill = _config.RightSkill;
+        if (!skill.Enabled || now < _nextRightSkillAt) return;
+        if (snapshot.Skills is not { Right.Ready: true }) return;
+        if (snapshot.Bars!.Mp.Percent < skill.MinMpPercent) return;
+
+        Release();
+        bool used = _input.Click(MouseButton.Right);
+        _nextRightSkillAt = now + TimeSpan.FromMilliseconds(skill.RecheckMs);
+        if (used)
+        {
+            RightSkillUses++;
+            _log.Information("Right skill used on {Point} (MP {Mp:F0}%)", _aim, snapshot.Bars.Mp.Percent);
+        }
+
+        if (_input.MouseDown(MouseButton.Left))
+            _holding = true;
+        else
+            Go(BrainState.SearchTarget, "attack click refused");
     }
 
     private void GiveUp(string reason)

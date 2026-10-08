@@ -134,6 +134,7 @@ public class HoverTargetFinderTests : IDisposable
         }
         public bool MouseDown(MouseButton button) => true;
         public bool MouseUp(MouseButton button) => true;
+        public bool Click(MouseButton button) => true;
         public void ReleaseAll() { }
     }
 

@@ -21,8 +21,24 @@ public sealed class CombatConfig
     /// <summary>Pause between searches when nothing was found.</summary>
     public int SearchRetryMs { get; set; } = 1500;
 
+    public RightSkillConfig RightSkill { get; set; } = new();
     public RestConfig Rest { get; set; } = new();
     public LootConfig Loot { get; set; } = new();
+}
+
+/// <summary>
+/// The right-click skill, used on the current target whenever its icon (right skill orb) is in color.
+/// A skill rotation can grow from here later.
+/// </summary>
+public sealed class RightSkillConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Don't use it below this much mana (0 = whenever it is ready).</summary>
+    public double MinMpPercent { get; set; }
+
+    /// <summary>After a use, wait this long before trying again (the icon takes a moment to turn gray).</summary>
+    public int RecheckMs { get; set; } = 1500;
 }
 
 /// <summary>

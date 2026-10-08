@@ -74,6 +74,12 @@ public sealed class OverlayRenderer(VisionConfig config)
             lines.Add(($"HP {b.Hp.Percent,5:F1}%   MP {b.Mp.Percent,5:F1}%   STM {b.Stm.Percent,5:F1}%", Ok));
         if (snapshot.Target is { } t)
             lines.Add(($"Target: {t}  (border {t.BorderScore:F2})", t.Visible ? Ok : Roi));
+        if (snapshot.Skills is { } skills)
+        {
+            foreach (var (orb, state) in new[] { (config.SkillOrbs.Left, skills.Left), (config.SkillOrbs.Right, skills.Right) })
+                Cv2.Circle(canvas, new Point(orb.Center.X, orb.Center.Y), orb.Radius + 2, state.Ready ? Ok : Bad, 1, LineTypes.AntiAlias);
+            lines.Add(($"Skills: {skills}", Roi));
+        }
         if (cursor is { } cr)
             lines.Add(($"Cursor at {cr.Mouse}: {cr.Reading}", cr.Reading.Kind == CursorKind.Enemy ? Bad : Ok));
 

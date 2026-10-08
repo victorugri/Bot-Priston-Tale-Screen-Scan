@@ -30,5 +30,11 @@ public sealed class DryRunInputSink(ILogger log) : IInputSink
         return true;
     }
 
+    public bool Click(MouseButton button)
+    {
+        log.Information("[dry-run] {Button} click", button.ToString());
+        return true;
+    }
+
     public void ReleaseAll() { }
 }

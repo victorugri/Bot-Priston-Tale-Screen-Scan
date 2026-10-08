@@ -12,7 +12,7 @@ namespace BotPriston.Tests;
 public class VisionSampleTests
 {
     private sealed record CursorLabel(int X, int Y, CursorKind Kind);
-    private sealed record Label(bool? Hud, double? Hp, double? Mp, double? Stm, TargetStatus? Target, double? TargetHp, CursorLabel? Cursor, string? Note);
+    private sealed record Label(bool? Hud, double? Hp, double? Mp, double? Stm, TargetStatus? Target, double? TargetHp, CursorLabel? Cursor, bool? LeftSkill, bool? RightSkill, string? Note);
     private sealed record LabelFile(double Tolerance, double TargetHpTolerance, Dictionary<string, Label> Samples);
 
     private static readonly LabelFile Labels = LoadLabels();
@@ -61,6 +61,11 @@ public class VisionSampleTests
             Assert.True(cursor.Kind == reading.Kind, $"cursor expected {cursor.Kind}, got {reading} ({label.Note})");
         }
 
+        if (label.LeftSkill is { } left)
+            Assert.True(left == snapshot.Skills?.Left.Ready, $"left skill expected ready={left}, got {snapshot.Skills} ({label.Note})");
+        if (label.RightSkill is { } right)
+            Assert.True(right == snapshot.Skills?.Right.Ready, $"right skill expected ready={right}, got {snapshot.Skills} ({label.Note})");
+
         if (label.TargetHp is { } targetHp)
         {
             Assert.NotNull(snapshot.Target?.HpPercent);
@@ -77,6 +82,8 @@ public class VisionSampleTests
             Assert.Contains(Labels.Samples.Values, l => l.Target == status);
         Assert.Contains(Labels.Samples.Values, l => l.Cursor?.Kind == CursorKind.Enemy);
         Assert.Contains(Labels.Samples.Values, l => l.Cursor?.Kind == CursorKind.Neutral);
+        Assert.Contains(Labels.Samples.Values, l => l.RightSkill == true);
+        Assert.Contains(Labels.Samples.Values, l => l.RightSkill == false);
     }
 
     private static void AssertPercent(string what, double? expected, double actual, double tolerance)

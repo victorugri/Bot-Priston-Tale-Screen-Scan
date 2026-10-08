@@ -86,6 +86,13 @@ public sealed class SendInputSink(GameWindow window, InputConfig config, ILogger
         return true;
     }
 
+    public bool Click(MouseButton button)
+    {
+        if (!MouseDown(button)) return false;
+        Thread.Sleep(Jittered(config.KeyHoldMs));
+        return MouseUp(button);
+    }
+
     public void ReleaseAll()
     {
         foreach (var button in _heldButtons.ToList())

@@ -133,6 +133,15 @@ public static class ConfigLoader
         if (combat.Rest.MaxSeconds >= config.Safety.WatchdogSeconds)
             errors.Add("Combat.Rest.MaxSeconds must be shorter than Safety.WatchdogSeconds.");
         if (combat.Loot.Enabled) errors.Add("Combat.Loot.Enabled: looting is not implemented yet.");
+        if (combat.RightSkill.MinMpPercent is < 0 or > 100) errors.Add("Combat.RightSkill.MinMpPercent must be 0-100.");
+        if (combat.RightSkill.RecheckMs < 0) errors.Add("Combat.RightSkill.RecheckMs must be >= 0.");
+
+        foreach (var (orb, name) in new[] { (config.Vision.SkillOrbs.Left, "Left"), (config.Vision.SkillOrbs.Right, "Right") })
+        {
+            if (orb.Radius <= 0 || !client.Contains(new PixelRect(orb.Center.X - orb.Radius, orb.Center.Y - orb.Radius, 2 * orb.Radius + 1, 2 * orb.Radius + 1)))
+                errors.Add($"Vision.SkillOrbs.{name}: the circle must be inside the client area.");
+            if (orb.MinColoredFraction is <= 0 or > 1) errors.Add($"Vision.SkillOrbs.{name}.MinColoredFraction must be in (0, 1].");
+        }
         if (config.Safety.DeadHpSeconds <= 0) errors.Add("Safety.DeadHpSeconds must be positive.");
 
         var input = config.Input;

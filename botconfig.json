@@ -84,6 +84,12 @@
       "NeutralColors": [ { "HMin": 45,  "HMax": 85, "SMin": 150, "VMin": 120 } ],
       "MinEnemyPixels": 15,
       "MinNeutralPixels": 10
+    },
+
+    // Round skill icons between the HP and MP tubes: in color = ready, gray = recharging.
+    "SkillOrbs": {
+      "Left":  { "Center": { "X": 374, "Y": 862 }, "Radius": 11, "MinSaturation": 100, "MinColoredFraction": 0.5 },
+      "Right": { "Center": { "X": 426, "Y": 862 }, "Radius": 11, "MinSaturation": 100, "MinColoredFraction": 0.5 }
     }
   },
 
@@ -109,9 +115,9 @@
   // Keys: 1 = stamina, 2 = HP, 3 = mana. A potion is used when its bar is below BelowPercent.
   // Priority when several are low: HP > MP > STM.
   "Potions": {
-    "Hp":  { "Enabled": true, "Key": "2", "BelowPercent": 60, "CooldownMs": 2000 },
-    "Mp":  { "Enabled": true, "Key": "3", "BelowPercent": 30, "CooldownMs": 2000 },
-    "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 20, "CooldownMs": 2000 },
+    "Hp":  { "Enabled": true, "Key": "2", "BelowPercent": 30, "CooldownMs": 2000 },
+    "Mp":  { "Enabled": true, "Key": "3", "BelowPercent": 10, "CooldownMs": 2000 },
+    "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 10, "CooldownMs": 2000 },
     "MinGainPercent": 1.0,     // a use "worked" if the bar rose at least this much by the end of the cooldown
     "MaxFailures": 3,          // uses in a row without effect before assuming the potion ran out
     "RetryAfterSeconds": 60    // then wait this long before trying it again
@@ -146,6 +152,11 @@
     "NoProgressSeconds": 15,      // give up a target whose HP doesn't drop for this long
     "MaxTargetSeconds": 60,       // give up a target after this long anyway
     "SearchRetryMs": 1500,        // wait between searches when nothing was found
+    "RightSkill": {               // right-click skill on the target whenever its icon is in color
+      "Enabled": true,
+      "MinMpPercent": 0,          // 0 = always when ready
+      "RecheckMs": 1500           // after a use, wait before checking the icon again
+    },
     "Rest": {                     // between fights, if potions can't keep up: stand still and regenerate
       "HpBelow": 40, "HpUntil": 80,
       "MpBelow": 10, "MpUntil": 50,

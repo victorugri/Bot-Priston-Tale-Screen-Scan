@@ -35,7 +35,9 @@ dotnet run --project src/BotPriston.App -- capture --hotkey
 - `debug` — window with the detections drawn over the live game (or `--source samples`).
 - `detect` — runs the detectors over screenshots and prints a table (`--csv`, `--overlay <dir>`).
 - `crop` — cuts a template out of a screenshot (`--source`, `--roi x,y,w,h`, `--out`).
-- `run` — runs the bot (`--dry-run` logs decisions without sending input).
+- `run` — runs the bot: Recover → SearchTarget → Engage → Attack (hold left click until the
+  target's HP bar is empty) → Recover, with potions and rest in between. `--dry-run` logs
+  decisions without sending input; `--no-combat` uses potions only.
   F12 pauses/resumes, Ctrl+F12 quits; losing focus pauses automatically.
 - `press` / `mouse` — send one key / mouse action to the game to check that input works.
 

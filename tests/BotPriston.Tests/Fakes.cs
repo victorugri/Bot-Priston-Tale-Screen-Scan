@@ -18,6 +18,7 @@ internal sealed class FakeInput : IInputSink
     public bool MoveMouse(PixelPoint clientPoint) => Record($"move {clientPoint}");
     public bool MouseDown(MouseButton button) => Record($"down {button}");
     public bool MouseUp(MouseButton button) => Record($"up {button}");
+    public bool Click(MouseButton button) => Record($"click {button}");
     public void ReleaseAll() => ReleaseAllCalls++;
 
     private bool Record(string action)
@@ -51,8 +52,9 @@ internal sealed class FakeVision : IVision
 
     public VisionSnapshot Analyze(Mat frame) => Next;
 
-    public static VisionSnapshot Snapshot(double hp, double mp, double stm, TargetPanel? target = null) =>
-        new(new HudState(true, 1.0), Bars(hp, mp, stm), target ?? new TargetPanel(TargetStatus.None, 0, null));
+    public static VisionSnapshot Snapshot(double hp, double mp, double stm, TargetPanel? target = null, bool rightSkillReady = false) =>
+        new(new HudState(true, 1.0), Bars(hp, mp, stm), target ?? new TargetPanel(TargetStatus.None, 0, null),
+            new SkillOrbs(new SkillOrb(false, 0), new SkillOrb(rightSkillReady, rightSkillReady ? 1 : 0)));
 
     public static TargetPanel Target(TargetStatus status, double? hp = null) => new(status, 1.0, hp);
 

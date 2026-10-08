@@ -19,6 +19,9 @@ public interface IInputSink
     bool MouseDown(MouseButton button);
     bool MouseUp(MouseButton button);
 
+    /// <summary>Press and release (held long enough for the game to register it).</summary>
+    bool Click(MouseButton button);
+
     /// <summary>Releases any key or button this sink is holding. Safe to call at any time.</summary>
     void ReleaseAll();
 }

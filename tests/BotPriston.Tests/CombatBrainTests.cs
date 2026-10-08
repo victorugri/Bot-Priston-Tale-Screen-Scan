@@ -52,8 +52,8 @@ public class CombatBrainTests : IDisposable
 
     private CombatBrain Brain() => new(_config, _finder, _cursor, _input, _time, TestLog.Silent, () => _progress++);
 
-    private void Tick(CombatBrain brain, TargetPanel? target = null, double hp = 100, double mp = 100) =>
-        brain.Tick(FakeVision.Snapshot(hp, mp, 100, target), _frame, CancellationToken.None);
+    private void Tick(CombatBrain brain, TargetPanel? target = null, double hp = 100, double mp = 100, bool rightReady = false) =>
+        brain.Tick(FakeVision.Snapshot(hp, mp, 100, target, rightReady), _frame, CancellationToken.None);
 
     /// <summary>Recover → SearchTarget → Engage → Attack.</summary>
     private CombatBrain Attacking()
@@ -229,6 +229,69 @@ public class CombatBrainTests : IDisposable
         Tick(brain, hp: 30);
 
         Assert.Equal(BrainState.SearchTarget, brain.State);
+    }
+
+    [Fact]
+    public void RightSkillReady_IsUsedOnTheTarget_ThenLeftAttackResumes()
+    {
+        var brain = Attacking();
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+
+        Assert.Equal(["down Left", "up Left", "click Right", "down Left"], _input.Actions);
+        Assert.Equal(1, brain.RightSkillUses);
+        Assert.Equal(BrainState.Attack, brain.State);
+    }
+
+    [Fact]
+    public void RightSkill_NotSpammedWhileTheIconTurnsGray()
+    {
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+
+        _time.Advance(TimeSpan.FromMilliseconds(1000));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true); // icon not gray yet
+        Assert.Equal(1, brain.RightSkillUses);
+
+        _time.Advance(TimeSpan.FromMilliseconds(500));
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), rightReady: true); // still in color: try again
+        Assert.Equal(2, brain.RightSkillUses);
+    }
+
+    [Fact]
+    public void RightSkill_NotUsedWhileRecharging()
+    {
+        var brain = Attacking();
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: false);
+
+        Assert.Equal(0, brain.RightSkillUses);
+        Assert.Equal(["down Left"], _input.Actions);
+    }
+
+    [Fact]
+    public void RightSkill_NotUsedWhenTheCursorIsOffTheMonster()
+    {
+        var brain = Attacking();
+        _cursor.Kind = CursorKind.Neutral;
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), rightReady: true);
+
+        Assert.Equal(0, brain.RightSkillUses);
+    }
+
+    [Fact]
+    public void RightSkill_RespectsMinMpAndEnabled()
+    {
+        _config.RightSkill.MinMpPercent = 20;
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90), mp: 15, rightReady: true);
+        Assert.Equal(0, brain.RightSkillUses);
+
+        _config.RightSkill.MinMpPercent = 0;
+        _config.RightSkill.Enabled = false;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 85), mp: 15, rightReady: true);
+        Assert.Equal(0, brain.RightSkillUses);
     }
 
     [Fact]

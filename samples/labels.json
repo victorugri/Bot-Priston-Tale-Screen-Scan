@@ -1,0 +1,36 @@
+{
+  // Ground truth for the offline vision tests (tests/BotPriston.Tests/VisionSampleTests.cs).
+  // Player bar values are percentages of the tube height, measured pixel by pixel and checked by eye.
+  // Target: None | Hovered | Engaged | Dead. TargetHp is the percentage the game prints on the bar.
+  // Omit a field to skip that check for an image.
+  "Tolerance": 1.5,
+  "TargetHpTolerance": 3.5,
+  "Samples": {
+    "20261005_173205_617_teste.png":  { "Hud": false, "Note": "login screen" },
+    "20261007_105134_590_step1.png":  { "Hud": false, "Note": "login screen" },
+    "20261007_175004_740_full.png":   { "Hud": false, "Note": "full-screen world map open" },
+    "20261007_175005_930_full.png":   { "Hud": true, "Hp": 100, "Mp": 100, "Stm": 97.4, "Target": "Hovered", "Note": "standing still, Esqueleto do Mal under the cursor" },
+    "20261007_112426_364_farm.png":   { "Hud": true, "Hp": 100, "Mp": 100, "Stm": 96.1, "Target": "None", "Note": "red leaves right above the HP tube" },
+    "20261007_112434_831_farm.png":   { "Hud": true, "Target": "None" },
+    "20261007_112439_017_farm.png":   { "Hud": true, "Target": "Hovered", "Note": "cursor over Hopi Dourado (red outline + name tag)" },
+    "20261007_112441_133_farm.png":   { "Hud": true, "Target": "Dead", "TargetHp": 0, "Note": "Hopi Dourado one-shot" },
+    "20261007_112451_846_farm.png":   { "Hud": true, "Hp": 100, "Mp": 97.9, "Stm": 86.8, "Target": "Hovered" },
+    "20261007_112455_991_farm.png":   { "Hud": true, "Target": "Dead", "TargetHp": 0, "Note": "Zaldi just died" },
+    "20261007_173908_228_farm.png":   { "Hud": true, "Hp": 98.9, "Mp": 63.8, "Stm": 80.3, "Target": "None" },
+    "20261007_173914_650_farm.png":   { "Hud": true, "Target": "Engaged", "TargetHp": 58.80, "Note": "bar end hidden under the % text" },
+    "20261007_173920_912_farm.png":   { "Hud": true, "Target": "Engaged", "TargetHp": 100 },
+    "20261007_173927_275_farm.png":   { "Hud": true, "Target": "Engaged", "TargetHp": 13.12, "Note": "red bar" },
+    "20261007_173933_508_farm.png":   { "Hud": true, "Target": "Engaged", "TargetHp": 66.25, "Note": "yellow bar" },
+    "20261007_173939_739_farm.png":   { "Hud": true, "Hp": 100, "Mp": 45.7, "Stm": 68.4, "Target": "Engaged", "TargetHp": 27.62, "Note": "red scenery above the HP tube" },
+    "20261007_173941_816_farm.png":   { "Hud": true, "Target": "Dead", "TargetHp": 0 },
+    "20261007_173950_138_farm.png":   { "Hud": true, "Target": "Engaged", "TargetHp": 8.80 },
+    "20261007_173954_389_farm.png":   { "Hud": true, "Hp": 100, "Mp": 38.3, "Stm": 67.1, "Target": "Engaged", "TargetHp": 100, "Note": "lowest MP in the set" },
+    "20261007_173958_758_farm.png":   { "Hud": true, "Target": "None", "Note": "panel gone a few seconds after the kill" },
+    "20261007_174011_668_farm.png":   { "Hud": true, "Hp": 95.7, "Mp": 45.7, "Stm": 100, "Target": "None", "Note": "lowest HP in the set" },
+    "20261007_112439_017_farm.png#cursor": { "Cursor": { "X": 921, "Y": 309, "Kind": "Enemy" }, "Note": "red gem over Hopi Dourado" },
+    "20261007_183857_cursor_ground.png": { "Hud": true, "Target": "Hovered", "Cursor": { "X": 725, "Y": 465, "Kind": "Neutral" },
+                                           "Note": "probe frame (magenta marker drawn at the mouse); panel still shows a Coelho hovered earlier" },
+    "20261007_183857_cursor_enemy.png":  { "Hud": true, "Cursor": { "X": 762, "Y": 400, "Kind": "Enemy" },
+                                           "Note": "probe frame; a Coelho hidden behind the character is under the cursor" }
+  }
+}

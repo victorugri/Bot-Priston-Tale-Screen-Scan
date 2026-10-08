@@ -1,0 +1,161 @@
+{
+  // How to find the game window. Run `BotPriston windows` to list candidates.
+  // Both filters are optional, but at least one must be set. All non-empty filters must match.
+  "Window": {
+    "ProcessName": "game",
+    "TitleContains": "",
+    "ExpectedClientWidth": 1600,
+    "ExpectedClientHeight": 900
+  },
+
+  // Backend: Auto | WindowsGraphicsCapture | BitBlt
+  "Capture": {
+    "Backend": "Auto",
+    "FrameTimeoutMs": 2000
+  },
+
+  // Key names: F1-F24, A-Z, 0-9, NumPad0-9, Insert, Delete, Home, End, PageUp, PageDown, ...
+  // Modifiers: Ctrl+, Shift+, Alt+
+  "Hotkeys": {
+    "Capture": "F11",
+    "PauseResume": "F12",
+    "Quit": "Ctrl+F12"
+  },
+
+  // All ROIs are in client-area pixels (1600x900). HSV uses OpenCV units: H 0-179, S/V 0-255.
+  "Vision": {
+    // The "C V S D Q X" labels under the menu buttons. Missing = not in the normal game view
+    // (login screen, full-screen map, loading, disconnected).
+    "Hud": {
+      "TemplatePath": "templates/hud_menu_letters.png",
+      "Roi": { "X": 655, "Y": 880, "Width": 140, "Height": 12 },
+      "SearchMargin": 3,
+      "MinScore": 0.8
+    },
+
+    // Inside of each tube (excluding the glass border). Liquid fills from the bottom.
+    "PlayerBars": {
+      "Hp": {
+        "Roi": { "X": 321, "Y": 800, "Width": 12, "Height": 94 },
+        "Colors": [ { "HMin": 170, "HMax": 10, "SMin": 120, "VMin": 70 } ],
+        "MinRowCoverage": 0.5,
+        "MaxGapRows": 2
+      },
+      "Mp": {
+        "Roi": { "X": 467, "Y": 800, "Width": 12, "Height": 94 },
+        "Colors": [ { "HMin": 95, "HMax": 125, "SMin": 120, "VMin": 70 } ],
+        "MinRowCoverage": 0.5,
+        "MaxGapRows": 2
+      },
+      "Stm": {
+        "Roi": { "X": 305, "Y": 818, "Width": 6, "Height": 76 },
+        "Colors": [ { "HMin": 45, "HMax": 75, "SMin": 120, "VMin": 70 } ],
+        "MinRowCoverage": 0.5,
+        "MaxGapRows": 2
+      }
+    },
+
+    // Top-right panel: appears when the cursor is over a monster (portrait + name) and gets an
+    // HP bar underneath once the monster is engaged.
+    "TargetPanel": {
+      "Border": { "X": 1392, "Y": 10, "Width": 161, "Height": 161 },
+      "RidgeMinLumaDelta": 12,
+      "RidgeMinSaturationDelta": 40,
+      "MinEdgeScore": 0.6,
+      "HpBar": {
+        "FrameRows": [
+          { "X": 1399, "Y": 175, "Width": 147, "Height": 2 },
+          { "X": 1399, "Y": 186, "Width": 147, "Height": 1 }
+        ],
+        "FrameMaxValue": 20,
+        "MinFrameDarkFraction": 0.8,
+        "Fill": { "X": 1399, "Y": 180, "Width": 147, "Height": 5 },
+        "FillColors": [ { "HMin": 0, "HMax": 179, "SMin": 150, "VMin": 100 } ],
+        "MinColumnCoverage": 0.5,
+        "MinRunColumns": 2
+      }
+    },
+
+    // The gem on the game's cursor is green over the ground and red over a monster. This is the
+    // hover signal (the target panel keeps showing the last monster for a while, so it isn't).
+    "Cursor": {
+      "GemBox": { "X": 4, "Y": 5, "Width": 17, "Height": 14 },   // relative to the mouse position
+      "EnemyColors":   [ { "HMin": 172, "HMax": 8,  "SMin": 150, "VMin": 120 } ],
+      "NeutralColors": [ { "HMin": 45,  "HMax": 85, "SMin": 150, "VMin": 120 } ],
+      "MinEnemyPixels": 15,
+      "MinNeutralPixels": 10
+    }
+  },
+
+  // Simulated input timing (ms). Jitter adds a random 0..JitterMs to every hold/delay.
+  "Input": {
+    "KeyHoldMs": 60,
+    "ActionDelayMs": 120,
+    "JitterMs": 40,
+    "MouseSettleMs": 40
+  },
+
+  "Safety": {
+    "DryRun": false,
+    "WatchdogSeconds": 120,     // stop if no progress for this long
+    "HudLostStopSeconds": 20,   // stop if the HUD is gone this long (death, disconnect, loading)
+    "DeadHpSeconds": 2          // stop if the character's HP bar is empty this long
+  },
+
+  "Bot": {
+    "TickMs": 100
+  },
+
+  // Keys: 1 = stamina, 2 = HP, 3 = mana. A potion is used when its bar is below BelowPercent.
+  // Priority when several are low: HP > MP > STM.
+  "Potions": {
+    "Hp":  { "Enabled": true, "Key": "2", "BelowPercent": 60, "CooldownMs": 2000 },
+    "Mp":  { "Enabled": true, "Key": "3", "BelowPercent": 30, "CooldownMs": 2000 },
+    "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 20, "CooldownMs": 2000 },
+    "MinGainPercent": 1.0,     // a use "worked" if the bar rose at least this much by the end of the cooldown
+    "MaxFailures": 3,          // uses in a row without effect before assuming the potion ran out
+    "RetryAfterSeconds": 60    // then wait this long before trying it again
+  },
+
+  // Hover sweep used to find monsters: the mouse visits a hexagonal grid of points inside an
+  // ellipse around the character (nearest first) until the target panel appears.
+  "Targeting": {
+    "Anchor": { "X": 800, "Y": 465 },   // where the character stands on screen
+    "RadiusX": 450,                     // search ellipse half-axes: monsters are usually close to the character
+    "RadiusY": 300,
+    "MinRadius": 60,                    // skip the character itself
+    "Step": 75,                         // grid spacing; must be smaller than a monster on screen
+    "EdgeMargin": 15,
+    "HoverDelayMs": 80,                 // wait after each move before reading the panel
+    "ConfirmDelayMs": 60,               // re-check a hit after this long
+    "Exclusions": [                     // the mouse never goes here
+      { "X": 0,    "Y": 0,   "Width": 70,  "Height": 70 },    // top-left icon
+      { "X": 1380, "Y": 0,   "Width": 220, "Height": 200 },   // target panel
+      { "X": 0,    "Y": 700, "Width": 310, "Height": 200 },   // chat
+      { "X": 290,  "Y": 780, "Width": 520, "Height": 120 },   // bars, skills, hotbar
+      { "X": 1400, "Y": 700, "Width": 200, "Height": 200 }    // minimap
+    ]
+  },
+
+  // Combat loop: Recover -> SearchTarget -> Engage -> Attack -> (Loot) -> Recover.
+  // Attack = hold the left button on the monster until its HP bar (target panel) is empty.
+  "Combat": {
+    "Enabled": true,
+    "LostTargetGraceMs": 400,     // cursor off the monster this long = it moved
+    "ReacquireRadius": 150,       // then look for it this close to where it was
+    "NoProgressSeconds": 15,      // give up a target whose HP doesn't drop for this long
+    "MaxTargetSeconds": 60,       // give up a target after this long anyway
+    "SearchRetryMs": 1500,        // wait between searches when nothing was found
+    "Rest": {                     // between fights, if potions can't keep up: stand still and regenerate
+      "HpBelow": 40, "HpUntil": 80,
+      "MpBelow": 10, "MpUntil": 50,
+      "MaxSeconds": 60
+    },
+    "Loot": { "Enabled": false }  // not implemented (needs clicking each item)
+  },
+
+  "Paths": {
+    "Samples": "samples",
+    "Logs": "logs"
+  }
+}

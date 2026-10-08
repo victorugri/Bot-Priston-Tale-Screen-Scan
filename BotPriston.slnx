@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BotPriston.App/BotPriston.App.csproj" />
+    <Project Path="src/BotPriston.Core/BotPriston.Core.csproj" />
+    <Project Path="src/BotPriston.Platform/BotPriston.Platform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BotPriston.Tests/BotPriston.Tests.csproj" />
+  </Folder>
+</Solution>

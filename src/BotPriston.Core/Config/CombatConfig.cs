@@ -1,3 +1,5 @@
+using BotPriston.Core.Geometry;
+
 namespace BotPriston.Core.Config;
 
 /// <summary>Combat loop: find a monster, hold the attack button on it until it dies, recover, repeat.</summary>
@@ -41,6 +43,26 @@ public sealed class CombatConfig
     public UnderAttackConfig UnderAttack { get; set; } = new();
     public RestConfig Rest { get; set; } = new();
     public LootConfig Loot { get; set; } = new();
+    public EarthquakeConfig Earthquake { get; set; } = new();
+}
+
+/// <summary>
+/// Earthquake mode: an area skill cast with a right click in the middle of the screen hits every monster
+/// around, so there is nothing to look for. The bot just right-clicks there at a fixed rhythm (and keeps
+/// drinking and restocking potions). Replaces the hunt (search, attack, right skill) while enabled.
+/// </summary>
+public sealed class EarthquakeConfig
+{
+    public bool Enabled { get; set; }
+
+    /// <summary>Where to right-click: the middle of the screen (the character).</summary>
+    public PixelPoint Point { get; set; } = new(800, 450);
+
+    /// <summary>Time between two casts.</summary>
+    public int IntervalMs { get; set; } = 1000;
+
+    /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
+    public double MinMpPercent { get; set; }
 }
 
 /// <summary>

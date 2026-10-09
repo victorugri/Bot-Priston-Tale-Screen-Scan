@@ -220,6 +220,12 @@
     "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
     "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
     "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
+    "Earthquake": {               // earthquake mode: no hunting, just a right click in the middle of the screen
+      "Enabled": false,           // every IntervalMs (area skill hits everything around); potions keep working
+      "Point": { "X": 800, "Y": 450 },
+      "IntervalMs": 1000,
+      "MinMpPercent": 0           // hold the casts below this much mana (0 = always cast)
+    },
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,
       "MinMpPercent": 0,          // 0 = always when ready

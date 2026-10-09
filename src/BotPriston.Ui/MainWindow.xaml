@@ -272,6 +272,21 @@
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
+                                    <CheckBox Content="Modo terremoto (só botão direito no meio da tela)" IsChecked="{Binding Config.Combat.Earthquake.Enabled}"
+                                              ToolTip="Não procura mob: clica com o botão direito no meio da tela a cada intervalo e continua tomando e repondo poções. Os ajustes de busca e ataque abaixo ficam sem efeito." />
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Terremoto a cada (ms)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Column="1" Text="{Binding Config.Combat.Earthquake.IntervalMs}" />
+                                        <TextBlock Grid.Row="1" Text="Mana mínima p/ terremoto (%)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Combat.Earthquake.MinMpPercent}" />
+                                    </Grid>
                                     <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
                                     <CheckBox Content="ATK contínuo ligado no jogo (clica 1 vez no mob)" IsChecked="{Binding Config.Combat.AutoAttack}"
                                               ToolTip="Ligue junto com o botão de ATK contínuo do jogo (ao lado do minimapa): o bot clica uma vez no mob e espera ele morrer, em vez de segurar o botão." />

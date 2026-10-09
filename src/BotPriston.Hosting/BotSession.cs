@@ -91,8 +91,16 @@ public sealed class BotSession : IDisposable
                 restock.InventoryKey, restock.PageKey, restock.BelowCount);
         }
 
+        var quake = config.Combat.Earthquake;
+        EarthquakeCaster? earthquake = null;
+        if (quake.Enabled)
+        {
+            earthquake = new EarthquakeCaster(quake, input, TimeProvider.System, log);
+            log.Information("Earthquake mode: right click at {Point} every {Interval} ms (no target search)", quake.Point, quake.IntervalMs);
+        }
+
         var runner = new BotRunner(config, capture, vision, input, window, control, TimeProvider.System, log,
-            CreateBrain(config, input, capture, vision, log), restocker);
+            earthquake is null ? CreateBrain(config, input, capture, vision, log) : null, restocker, earthquake);
 
         SessionRecorder? recorder = null;
         if (options.Record)

@@ -43,6 +43,7 @@ public sealed class BotRunner
     private readonly ILogger _log;
     private readonly CombatBrain? _brain;
     private readonly PotionRestocker? _restocker;
+    private readonly EarthquakeCaster? _earthquake;
     private CancellationToken _runCancel = CancellationToken.None;
     private DateTimeOffset? _hpEmptySince;
     private readonly MotionDetector? _motion;
@@ -65,7 +66,7 @@ public sealed class BotRunner
     /// </param>
     public BotRunner(BotConfig config, ICaptureSource capture, IVision vision, IInputSink input,
         IGameWindowState window, BotControl control, TimeProvider time, ILogger log,
-        Func<Action, CombatBrain>? brainFactory = null, PotionRestocker? restocker = null)
+        Func<Action, CombatBrain>? brainFactory = null, PotionRestocker? restocker = null, EarthquakeCaster? earthquake = null)
     {
         _config = config;
         _capture = capture;
@@ -80,6 +81,7 @@ public sealed class BotRunner
         _hudWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.HudLostStopSeconds), time);
         _brain = brainFactory?.Invoke(_progressWatchdog.Kick);
         _restocker = restocker;
+        _earthquake = earthquake;
         if (_brain is not null)
             _brain.PotionAvailable = _potions.IsAvailable;
         if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0)
@@ -94,6 +96,7 @@ public sealed class BotRunner
 
     public CombatBrain? Brain => _brain;
     public PotionRestocker? Restocker => _restocker;
+    public EarthquakeCaster? Earthquake => _earthquake;
 
     /// <summary>Called at the end of every tick that saw the game (frame + what was perceived), e.g. to record a session.</summary>
     public Action<Mat, VisionSnapshot>? AfterTick { get; set; }
@@ -132,6 +135,8 @@ public sealed class BotRunner
                 _log.Information("Session: {Summary}", _brain.Summary);
             if (_restocker is not null)
                 _log.Information("Session: {Summary}", _restocker.Summary);
+            if (_earthquake is not null)
+                _log.Information("Session: {Summary}", _earthquake.Summary);
             if (_motion is not null && _brain is not null)
                 _log.Information("Session: {Steps} of {Attacks} attack clicks made the character step towards the monster",
                     AttackSteps, _brain.Engagements);
@@ -209,6 +214,14 @@ public sealed class BotRunner
         using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(_runCancel, _control.Interrupt);
         if (Restock(image, snapshot, interrupt.Token))
             return;
+
+        if (_earthquake is not null)
+        {
+            // No targets to track: alive with the HUD up and casting counts as progress.
+            _earthquake.Tick(snapshot.Bars);
+            _progressWatchdog.Kick();
+            return;
+        }
 
         if (_brain is null)
         {

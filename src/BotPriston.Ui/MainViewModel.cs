@@ -224,7 +224,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 RunnerState.HudHidden => "Interface do jogo não visível",
                 _ => "Parando...",
             };
-            ActivityText = runner.Restocker?.Busy == true ? "Pegando poções do inventário" : runner.Brain?.State switch
+            ActivityText = runner.Restocker?.Busy == true ? "Pegando poções do inventário"
+                : runner.Earthquake is not null ? (runner.State == RunnerState.Running ? "Terremoto" : "")
+                : runner.Brain?.State switch
             {
                 BrainState.Recover => runner.State == RunnerState.Running ? "Recuperando" : "",
                 BrainState.SearchTarget => "Procurando alvo",
@@ -240,6 +242,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 WalkStops = brain.WalkStops;
                 DistantAttackers = brain.WideTargets;
             }
+            if (runner.Earthquake is { } quake)
+                RightSkillCasts = quake.Casts;
             if (runner.LastSnapshot?.Bars is { } bars)
             {
                 Hp = bars.Hp.Percent;

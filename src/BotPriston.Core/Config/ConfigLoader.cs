@@ -140,6 +140,11 @@ public static class ConfigLoader
             errors.Add("Combat: LostTargetGraceMs, ReacquireRadius and SearchRetryMs must be >= 0.");
         if (combat.ReclickMs <= 0) errors.Add("Combat.ReclickMs must be positive.");
         if (combat.OutOfReachRetryMs < 0) errors.Add("Combat.OutOfReachRetryMs must be >= 0.");
+        var quake = combat.Earthquake;
+        if (quake.IntervalMs < 100) errors.Add("Combat.Earthquake.IntervalMs must be >= 100.");
+        if (quake.MinMpPercent is < 0 or > 100) errors.Add("Combat.Earthquake.MinMpPercent must be 0-100.");
+        if (!client.Contains(new PixelRect(quake.Point.X, quake.Point.Y, 1, 1)) || Targeting.SweepPattern.IsExcluded(quake.Point, targeting))
+            errors.Add("Combat.Earthquake.Point must be inside the client area and outside Targeting.Exclusions.");
         if (motion.AttackStepWatchMs < 0 || motion.AttackStepMinPx <= 0)
             errors.Add("Vision.Motion.AttackStepWatchMs must be >= 0 and AttackStepMinPx positive.");
         if (combat.NoProgressSeconds <= 0 || combat.MaxTargetSeconds <= 0)

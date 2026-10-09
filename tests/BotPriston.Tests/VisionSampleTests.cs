@@ -12,7 +12,8 @@ namespace BotPriston.Tests;
 public class VisionSampleTests
 {
     private sealed record CursorLabel(int X, int Y, CursorKind Kind);
-    private sealed record Label(bool? Hud, double? Hp, double? Mp, double? Stm, TargetStatus? Target, double? TargetHp, CursorLabel? Cursor, bool? LeftSkill, bool? RightSkill, string? Note);
+    private sealed record Label(bool? Hud, double? Hp, double? Mp, double? Stm, TargetStatus? Target, double? TargetHp, CursorLabel? Cursor, bool? LeftSkill, bool? RightSkill,
+        Dictionary<string, int>? Potions, int? InventoryPage, string? Note);
     private sealed record LabelFile(double Tolerance, double TargetHpTolerance, Dictionary<string, Label> Samples);
 
     private static readonly LabelFile Labels = LoadLabels();
@@ -66,6 +67,30 @@ public class VisionSampleTests
         if (label.RightSkill is { } right)
             Assert.True(right == snapshot.Skills?.Right.Ready, $"right skill expected ready={right}, got {snapshot.Skills} ({label.Note})");
 
+        if (label.Potions is { } potions)
+        {
+            Assert.NotNull(snapshot.Potions);
+            foreach (var (slot, expected) in potions)
+            {
+                var read = slot switch
+                {
+                    "Hp" => snapshot.Potions.Hp,
+                    "Mp" => snapshot.Potions.Mp,
+                    "Stm" => snapshot.Potions.Stm,
+                    _ => throw new InvalidDataException($"unknown potion slot {slot} in labels.json"),
+                };
+                Assert.True(expected == read.Left, $"{slot} potions: expected {expected}, read {read} ({label.Note})");
+            }
+        }
+
+        if (label.InventoryPage is { } page)
+        {
+            Assert.NotNull(snapshot.Inventory);
+            Assert.True((page > 0) == snapshot.Inventory.Open, $"inventory expected {(page > 0 ? "open" : "closed")}, got {snapshot.Inventory} ({label.Note})");
+            if (page > 0)
+                Assert.True(page == snapshot.Inventory.Page, $"inventory page expected {page}, got {snapshot.Inventory} ({label.Note})");
+        }
+
         if (label.TargetHp is { } targetHp)
         {
             Assert.NotNull(snapshot.Target?.HpPercent);
@@ -84,6 +109,9 @@ public class VisionSampleTests
         Assert.Contains(Labels.Samples.Values, l => l.Cursor?.Kind == CursorKind.Neutral);
         Assert.Contains(Labels.Samples.Values, l => l.RightSkill == true);
         Assert.Contains(Labels.Samples.Values, l => l.RightSkill == false);
+        foreach (var page in new[] { 0, 1, 2 })
+            Assert.Contains(Labels.Samples.Values, l => l.InventoryPage == page);
+        Assert.Contains(Labels.Samples.Values, l => l.Potions?.Values.Any(n => n < 10) == true);
     }
 
     private static void AssertPercent(string what, double? expected, double actual, double tolerance)

@@ -49,6 +49,13 @@
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
+    <!-- Potions left in the hotbar, next to each bar -->
+    <Style x:Key="PotionCount" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="ToolTip" Value="Poções na barra" />
+    </Style>
+
     <!-- Inputs -->
     <Style TargetType="TextBox">
         <Setter Property="Background" Value="{StaticResource Input}" />

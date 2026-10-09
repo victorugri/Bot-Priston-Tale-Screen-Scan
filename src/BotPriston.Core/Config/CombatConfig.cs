@@ -25,6 +25,18 @@ public sealed class CombatConfig
     /// <summary>Pause between searches when nothing was found.</summary>
     public int SearchRetryMs { get; set; } = 1500;
 
+    /// <summary>Pause before searching again when the only monsters seen are out of attack reach (they come closer).</summary>
+    public int OutOfReachRetryMs { get; set; } = 300;
+
+    /// <summary>
+    /// The game's continuous attack ("ATK contínuo", button next to the minimap) is on: one click on the
+    /// monster and the character attacks it until it dies. The bot clicks once instead of holding the button.
+    /// </summary>
+    public bool AutoAttack { get; set; }
+
+    /// <summary>With <see cref="AutoAttack"/>: click the target again when its HP hasn't dropped for this long.</summary>
+    public int ReclickMs { get; set; } = 2000;
+
     public RightSkillConfig RightSkill { get; set; } = new();
     public UnderAttackConfig UnderAttack { get; set; } = new();
     public RestConfig Rest { get; set; } = new();

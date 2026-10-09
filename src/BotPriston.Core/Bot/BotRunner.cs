@@ -1,5 +1,6 @@
-﻿using BotPriston.Core.Capture;
+using BotPriston.Core.Capture;
 using BotPriston.Core.Config;
+using BotPriston.Core.Geometry;
 using BotPriston.Core.Input;
 using BotPriston.Core.Vision;
 using OpenCvSharp;
@@ -41,11 +42,22 @@ public sealed class BotRunner
     private readonly TimeProvider _time;
     private readonly ILogger _log;
     private readonly CombatBrain? _brain;
+    private readonly PotionRestocker? _restocker;
     private CancellationToken _runCancel = CancellationToken.None;
     private DateTimeOffset? _hpEmptySince;
     private readonly MotionDetector? _motion;
     private DateTimeOffset? _walkingSince;
     private double _walkDx, _walkDy;
+    private int _seenEngagements;
+    private StepWatch? _stepWatch;
+
+    /// <summary>Ground slide right after an attack click (see <see cref="MotionConfig.AttackStepWatchMs"/>).</summary>
+    private sealed class StepWatch(PixelPoint aim, DateTimeOffset until)
+    {
+        public PixelPoint Aim { get; } = aim;
+        public DateTimeOffset Until { get; } = until;
+        public double Slid { get; set; }
+    }
 
     /// <param name="brainFactory">
     /// Builds the combat brain, given the callback it must call on progress (damage dealt, kill).
@@ -53,7 +65,7 @@ public sealed class BotRunner
     /// </param>
     public BotRunner(BotConfig config, ICaptureSource capture, IVision vision, IInputSink input,
         IGameWindowState window, BotControl control, TimeProvider time, ILogger log,
-        Func<Action, CombatBrain>? brainFactory = null)
+        Func<Action, CombatBrain>? brainFactory = null, PotionRestocker? restocker = null)
     {
         _config = config;
         _capture = capture;
@@ -67,6 +79,7 @@ public sealed class BotRunner
         _progressWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.WatchdogSeconds), time);
         _hudWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.HudLostStopSeconds), time);
         _brain = brainFactory?.Invoke(_progressWatchdog.Kick);
+        _restocker = restocker;
         if (_brain is not null)
             _brain.PotionAvailable = _potions.IsAvailable;
         if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0)
@@ -76,7 +89,11 @@ public sealed class BotRunner
     /// <summary>Times the character was caught walking.</summary>
     public int WalkEpisodes { get; private set; }
 
+    /// <summary>Attack clicks after which the character stepped towards the monster (it was out of reach).</summary>
+    public int AttackSteps { get; private set; }
+
     public CombatBrain? Brain => _brain;
+    public PotionRestocker? Restocker => _restocker;
 
     /// <summary>Called at the end of every tick that saw the game (frame + what was perceived), e.g. to record a session.</summary>
     public Action<Mat, VisionSnapshot>? AfterTick { get; set; }
@@ -113,6 +130,11 @@ public sealed class BotRunner
             _log.Information("Bot stopped: {Reason}", StopReason ?? "unknown");
             if (_brain is not null)
                 _log.Information("Session: {Summary}", _brain.Summary);
+            if (_restocker is not null)
+                _log.Information("Session: {Summary}", _restocker.Summary);
+            if (_motion is not null && _brain is not null)
+                _log.Information("Session: {Steps} of {Attacks} attack clicks made the character step towards the monster",
+                    AttackSteps, _brain.Engagements);
             _motion?.Dispose();
         }
     }
@@ -184,6 +206,10 @@ public sealed class BotRunner
             return;
         }
 
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(_runCancel, _control.Interrupt);
+        if (Restock(image, snapshot, interrupt.Token))
+            return;
+
         if (_brain is null)
         {
             // Survival-only mode: being alive with the HUD up counts as progress.
@@ -191,8 +217,38 @@ public sealed class BotRunner
             return;
         }
 
-        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(_runCancel, _control.Interrupt);
         _brain.Tick(snapshot, image, interrupt.Token);
+    }
+
+    /// <summary>
+    /// Refill low hotbar potions from the inventory as soon as a stack runs low, even mid-fight (monsters
+    /// rarely leave a gap): the attack is dropped, buttons released, and the brain searches again afterwards.
+    /// Also closes the inventory if a refill was interrupted while it was open. Returns true if it acted.
+    /// </summary>
+    private bool Restock(Mat image, VisionSnapshot snapshot, CancellationToken interrupt)
+    {
+        if (_restocker is null) return false;
+        if (snapshot.Potions is { } slots)
+            _restocker.Observe(image, slots);
+
+        if (_restocker.MustClose(snapshot.Inventory))
+        {
+            _log.Information("Closing the inventory left open by an interrupted restock");
+            _restocker.Close(interrupt);
+            _motion?.Reset();
+            return true;
+        }
+
+        var due = _restocker.Due();
+        if (due.Count == 0) return false;
+
+        // Hands off the mouse: holding a button while the cursor goes to the inventory would walk.
+        _input.ReleaseAll();
+        _input.ForceReleaseButtons();
+        _brain?.Suspend("restocking potions");
+        _restocker.Run(due, interrupt);
+        _motion?.Reset(); // the inventory window covered part of the screen
+        return true;
     }
 
     /// <summary>
@@ -203,6 +259,7 @@ public sealed class BotRunner
     {
         if (_motion is null) return false;
         var motion = _motion.Update(image);
+        WatchAttackStep(motion);
 
         // Chasing a distant attacker found by the wider search: walking is allowed for that one target.
         if (_brain?.AllowWalking == true)
@@ -239,6 +296,49 @@ public sealed class BotRunner
         _log.Warning("Character is WALKING ({Motion}) while {Context}: buttons forced up, target dropped", motion, context);
         _brain?.OnWalkingDetected(context);
         return true;
+    }
+
+    /// <summary>
+    /// Right after each attack click, add up how far the ground slides. Clicking a monster out of reach makes
+    /// the game step the character towards it; the log says where those monsters were, to tune the reach.
+    /// </summary>
+    private void WatchAttackStep(MotionReading motion)
+    {
+        if (_brain is null) return;
+        var now = _time.GetUtcNow();
+
+        if (_brain.Engagements != _seenEngagements)
+        {
+            FinishStepWatch();
+            _seenEngagements = _brain.Engagements;
+            if (!_brain.AllowWalking && _brain.Aim is { } aim)
+                _stepWatch = new StepWatch(aim, now + TimeSpan.FromMilliseconds(_config.Vision.Motion.AttackStepWatchMs));
+        }
+
+        if (_stepWatch is not { } watch) return;
+        if (motion.Moving) watch.Slid += motion.Magnitude;
+        if (now >= watch.Until) FinishStepWatch();
+    }
+
+    private void FinishStepWatch()
+    {
+        if (_stepWatch is not { } watch) return;
+        _stepWatch = null;
+
+        var anchor = _config.Targeting.Anchor;
+        int dx = watch.Aim.X - anchor.X, dy = watch.Aim.Y - anchor.Y;
+        double reach = _config.Targeting.ReachDistance(watch.Aim);
+        if (watch.Slid >= _config.Vision.Motion.AttackStepMinPx)
+        {
+            AttackSteps++;
+            _log.Warning("Attack on {Aim} (offset {Dx},{Dy} = {Reach:F2} x reach) made the character step ~{Slid:F0} px: out of reach there",
+                watch.Aim, dx, dy, reach, watch.Slid);
+        }
+        else
+        {
+            _log.Debug("Attack on {Aim} (offset {Dx},{Dy} = {Reach:F2} x reach): no step (ground slid {Slid:F0} px)",
+                watch.Aim, dx, dy, reach, watch.Slid);
+        }
     }
 
     /// <summary>An empty HP bar for a while means the character is dead: stop before doing anything silly.</summary>

@@ -3,7 +3,10 @@ using BotPriston.Core.Geometry;
 
 namespace BotPriston.Core.Targeting;
 
-/// <summary>Probe points for the hover sweep: a hexagonal grid inside an ellipse, nearest to the character first.</summary>
+/// <summary>
+/// Probe points for the hover sweep: a hexagonal grid inside an ellipse. The points within attack reach
+/// come first, nearest to the character first; then the rest of the search area, nearest first.
+/// </summary>
 public static class SweepPattern
 {
     public static IReadOnlyList<PixelPoint> Generate(TargetingConfig config, int clientWidth, int clientHeight)
@@ -11,7 +14,7 @@ public static class SweepPattern
         var anchor = config.Anchor;
         int step = Math.Max(1, config.Step);
         double rowHeight = step * Math.Sqrt(3) / 2;
-        var points = new List<(PixelPoint Point, double Distance)>();
+        var points = new List<(PixelPoint Point, bool OutOfReach, double Distance)>();
 
         int rows = (int)Math.Ceiling(config.RadiusY / rowHeight);
         for (int row = -rows; row <= rows; row++)
@@ -24,13 +27,14 @@ public static class SweepPattern
                 int x = anchor.X + (int)Math.Round(col * step + offset);
                 var p = new PixelPoint(x, y);
                 if (!Accept(p, config, clientWidth, clientHeight)) continue;
+                bool inReach = config.InReach(p);
                 double dx = (x - anchor.X) / (double)config.RadiusX;
                 double dy = (y - anchor.Y) / (double)config.RadiusY;
-                points.Add((p, Math.Sqrt(dx * dx + dy * dy)));
+                points.Add((p, !inReach, inReach ? config.ReachDistance(p) : Math.Sqrt(dx * dx + dy * dy)));
             }
         }
 
-        return points.OrderBy(p => p.Distance).ThenBy(p => p.Point.Y).ThenBy(p => p.Point.X)
+        return points.OrderBy(p => p.OutOfReach).ThenBy(p => p.Distance).ThenBy(p => p.Point.Y).ThenBy(p => p.Point.X)
             .Select(p => p.Point).ToList();
     }
 

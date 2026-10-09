@@ -99,13 +99,44 @@
       "MinShiftPx": 2.5,          // ground shift per frame that counts as movement
       "AgreementPx": 2,
       "MinAgreeingBoxes": 3,      // most boxes must see the same shift (a monster in one box doesn't count)
-      "ConsecutiveFrames": 3      // hit effects shake a single frame; walking lasts
+      "ConsecutiveFrames": 3,     // hit effects shake a single frame; walking lasts
+      "AttackStepWatchMs": 800,   // after each attack click, watch the ground this long...
+      "AttackStepMinPx": 10       // ...and log a step towards the monster if it slid this much (tunes Targeting.Reach*)
     },
 
     // Round skill icons between the HP and MP tubes: in color = ready, gray = recharging.
     "SkillOrbs": {
       "Left":  { "Center": { "X": 374, "Y": 862 }, "Radius": 11, "MinSaturation": 100, "MinColoredFraction": 0.5 },
       "Right": { "Center": { "X": 426, "Y": 862 }, "Radius": 11, "MinSaturation": 100, "MinColoredFraction": 0.5 }
+    },
+
+    // Hotbar cells of the potions (keys 1, 2, 3). The stack size is printed in white on each cell.
+    "PotionSlots": {
+      "Stm": { "X": 496, "Y": 866, "Width": 22, "Height": 22 },
+      "Hp":  { "X": 522, "Y": 866, "Width": 22, "Height": 22 },
+      "Mp":  { "X": 548, "Y": 866, "Width": 22, "Height": 22 },
+      "MinItemFraction": 0.15     // bright pixels needed in a cell for it to hold an item (empty cells: ~0)
+    },
+
+    // Stack sizes: pure-white digits, 8 px tall, in the top-left corner of an item cell.
+    "ItemCount": {
+      "DigitsTop": 5,
+      "MinWhite": 232,
+      "MaxWhiteSpread": 24,
+      "MinGlyphScore": 0.75
+    },
+
+    // Inventory window (bottom-left). Roi = its "!" and "▲" buttons, which only exist while it's open.
+    "Inventory": {
+      "TemplatePath": "templates/inventory_buttons.png",
+      "Roi": { "X": 68, "Y": 872, "Width": 52, "Height": 20 },
+      "SearchMargin": 3,
+      "MinScore": 0.8,
+      "Grid": { "X": 22, "Y": 735, "Width": 264, "Height": 132 },   // 12 x 6 cells of 22 px
+      "CellSize": 22,
+      "Page1Button": { "X": 28, "Y": 875, "Width": 16, "Height": 15 },  // "<", lit on page 1
+      "Page2Button": { "X": 50, "Y": 875, "Width": 16, "Height": 15 },  // ">", lit on page 2
+      "MaxIconDifference": 0.12   // same potion: ~0.02-0.04; a different potion: 0.3+
     }
   },
 
@@ -137,7 +168,22 @@
     "Stm": { "Enabled": true, "Key": "1", "BelowPercent": 20, "CooldownMs": 2000 },
     "MinGainPercent": 1.0,     // a use "worked" if the bar rose at least this much by the end of the cooldown
     "MaxFailures": 3,          // uses in a row without effect before assuming the potion ran out
-    "RetryAfterSeconds": 60    // then wait this long before trying it again
+    "RetryAfterSeconds": 60,   // then wait this long before trying it again
+
+    // Refill the hotbar from the inventory when a stack runs low: open the inventory (V), hover the same
+    // potion and press Shift + its key (adds the stack), look on page 2 (E) if needed, close it (V).
+    // Done as soon as a stack is low, even mid-fight (the target is dropped and searched again).
+    "Restock": {
+      "Enabled": false,
+      "BelowCount": 5,            // refill when the hotbar stack is below this (empty = 0)
+      "InventoryKey": "V",
+      "PageKey": "E",
+      "ConfirmTicks": 3,          // the low count must be read this many ticks in a row
+      "StepDelayMs": 350,         // wait after each key / mouse move before looking again
+      "ToggleTimeoutMs": 2000,    // wait this long for the inventory to open/close
+      "RetryAfterSeconds": 300,   // potion not found in the inventory (or no refill): leave it alone this long
+      "MouseRest": { "X": 230, "Y": 882 }   // mouse parks here (inventory money field) while reading the grid
+    }
   },
 
   // Hover sweep used to find monsters: the mouse visits a hexagonal grid of points inside an
@@ -146,6 +192,8 @@
     "Anchor": { "X": 800, "Y": 465 },   // where the character stands on screen
     "RadiusX": 130,                     // search ellipse half-axes: monsters close to the character
     "RadiusY": 95,                      // (Combat.UnderAttack searches farther only when losing HP)
+    "ReachX": 130,                      // attack reach: only monsters inside this ellipse are clicked; one farther
+    "ReachY": 95,                       // away makes the game walk the character to it (seen, left alone)
     "MinRadius": 35,                    // skip the character itself (monsters stick to it, so keep this small)
     "Step": 60,                         // grid spacing; must be smaller than a monster on screen
     "EdgeMargin": 15,
@@ -169,6 +217,9 @@
     "NoProgressSeconds": 5,       // give up a target whose HP doesn't drop for this long
     "MaxTargetSeconds": 60,       // give up a target after this long anyway
     "SearchRetryMs": 1500,        // wait between searches when nothing was found
+    "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
+    "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
+    "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,
       "MinMpPercent": 0,          // 0 = always when ready

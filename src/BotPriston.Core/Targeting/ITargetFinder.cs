@@ -14,6 +14,11 @@ public enum FindOutcome
     Found,
     /// <summary>The whole search area was probed without a hit.</summary>
     NothingFound,
+    /// <summary>
+    /// Nothing within attack reach, but a monster farther away (in <see cref="FindResult.Target"/>):
+    /// clicking it would make the character walk, so it is left alone until it comes closer.
+    /// </summary>
+    OutOfReach,
     /// <summary>Input was refused (game lost focus) or the search was cancelled.</summary>
     Aborted,
 }

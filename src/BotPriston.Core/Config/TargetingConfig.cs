@@ -12,6 +12,15 @@ public sealed class TargetingConfig
     public int RadiusX { get; set; } = 700;
     public int RadiusY { get; set; } = 400;
 
+    /// <summary>
+    /// Half-axes of the attack reach: monsters inside this ellipse are attacked from where the character
+    /// stands; clicking one farther away makes the game walk the character to it, so those are only seen,
+    /// never clicked. Smaller vertically than horizontally on screen (the camera looks down at an angle).
+    /// 0 = the whole search area is in reach.
+    /// </summary>
+    public int ReachX { get; set; }
+    public int ReachY { get; set; }
+
     /// <summary>Points closer than this to the anchor are skipped (the character itself).</summary>
     public int MinRadius { get; set; } = 60;
 
@@ -30,13 +39,29 @@ public sealed class TargetingConfig
     /// <summary>HUD areas where the mouse must never go (bars, hotbar, chat, minimap, target panel...).</summary>
     public List<PixelRect> Exclusions { get; set; } = [];
 
-    /// <summary>Same settings with a different search area (e.g. the wider "under attack" search).</summary>
+    /// <summary>Whether a monster at this point can be attacked without the character walking.</summary>
+    public bool InReach(PixelPoint p) => ReachX <= 0 || ReachY <= 0 || ReachDistance(p) <= 1;
+
+    /// <summary>Distance from the anchor in units of the reach ellipse (1 = on its edge).</summary>
+    public double ReachDistance(PixelPoint p)
+    {
+        double rx = ReachX > 0 ? ReachX : RadiusX, ry = ReachY > 0 ? ReachY : RadiusY;
+        double dx = (p.X - Anchor.X) / rx, dy = (p.Y - Anchor.Y) / ry;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    /// <summary>
+    /// Same settings with a different search area (the wider "under attack" search). Everything found
+    /// there may be attacked: that search exists to go after distant attackers, walking if needed.
+    /// </summary>
     public TargetingConfig WithArea(int radiusX, int radiusY, int step)
     {
         var copy = (TargetingConfig)MemberwiseClone();
         copy.RadiusX = radiusX;
         copy.RadiusY = radiusY;
         copy.Step = step;
+        copy.ReachX = 0;
+        copy.ReachY = 0;
         return copy;
     }
 }

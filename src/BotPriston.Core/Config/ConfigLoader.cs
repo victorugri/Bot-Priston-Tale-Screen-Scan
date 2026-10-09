@@ -129,6 +129,8 @@ public static class ConfigLoader
             errors.Add("Targeting.Anchor must be inside the client area.");
         if (targeting.RadiusX <= 0 || targeting.RadiusY <= 0) errors.Add("Targeting.RadiusX/RadiusY must be positive.");
         if (targeting.Step < 10) errors.Add("Targeting.Step must be >= 10.");
+        if (targeting.ReachX < 0 || targeting.ReachY < 0 || (targeting.ReachX == 0) != (targeting.ReachY == 0))
+            errors.Add("Targeting.ReachX/ReachY must both be positive (or both 0 = the whole search area).");
         if (targeting.MinRadius < 0 || targeting.EdgeMargin < 0) errors.Add("Targeting.MinRadius/EdgeMargin must be >= 0.");
         if (targeting.HoverDelayMs < 0 || targeting.ConfirmDelayMs < 0) errors.Add("Targeting delays must be >= 0.");
         foreach (var rect in targeting.Exclusions) CheckRoi(rect, "Targeting.Exclusions");
@@ -136,6 +138,10 @@ public static class ConfigLoader
         var combat = config.Combat;
         if (combat.LostTargetGraceMs < 0 || combat.ReacquireRadius < 0 || combat.SearchRetryMs < 0)
             errors.Add("Combat: LostTargetGraceMs, ReacquireRadius and SearchRetryMs must be >= 0.");
+        if (combat.ReclickMs <= 0) errors.Add("Combat.ReclickMs must be positive.");
+        if (combat.OutOfReachRetryMs < 0) errors.Add("Combat.OutOfReachRetryMs must be >= 0.");
+        if (motion.AttackStepWatchMs < 0 || motion.AttackStepMinPx <= 0)
+            errors.Add("Vision.Motion.AttackStepWatchMs must be >= 0 and AttackStepMinPx positive.");
         if (combat.NoProgressSeconds <= 0 || combat.MaxTargetSeconds <= 0)
             errors.Add("Combat: NoProgressSeconds and MaxTargetSeconds must be positive.");
         var rest = combat.Rest;
@@ -177,6 +183,44 @@ public static class ConfigLoader
         CheckPotion(config.Potions.Stm, "Potions.Stm");
         if (config.Potions.MaxFailures < 1) errors.Add("Potions.MaxFailures must be >= 1.");
         if (config.Potions.RetryAfterSeconds < 0) errors.Add("Potions.RetryAfterSeconds must be >= 0.");
+
+        var slots = config.Vision.PotionSlots;
+        CheckRoi(slots.Hp, "Vision.PotionSlots.Hp");
+        CheckRoi(slots.Mp, "Vision.PotionSlots.Mp");
+        CheckRoi(slots.Stm, "Vision.PotionSlots.Stm");
+        if (slots.MinItemFraction is <= 0 or > 1) errors.Add("Vision.PotionSlots.MinItemFraction must be in (0, 1].");
+        var count = config.Vision.ItemCount;
+        if (count.DigitsTop < 0) errors.Add("Vision.ItemCount.DigitsTop must be >= 0.");
+        if (count.MinWhite is < 0 or > 255 || count.MaxWhiteSpread is < 0 or > 255)
+            errors.Add("Vision.ItemCount.MinWhite/MaxWhiteSpread must be 0-255.");
+        if (count.MinGlyphScore is <= 0 or > 1) errors.Add("Vision.ItemCount.MinGlyphScore must be in (0, 1].");
+
+        var inventory = config.Vision.Inventory;
+        if (string.IsNullOrWhiteSpace(inventory.TemplatePath)) errors.Add("Vision.Inventory.TemplatePath is empty.");
+        CheckRoi(inventory.Roi, "Vision.Inventory.Roi");
+        CheckRoi(inventory.Grid, "Vision.Inventory.Grid");
+        CheckRoi(inventory.Page1Button, "Vision.Inventory.Page1Button");
+        CheckRoi(inventory.Page2Button, "Vision.Inventory.Page2Button");
+        if (inventory.MinScore is <= 0 or > 1) errors.Add("Vision.Inventory.MinScore must be in (0, 1].");
+        if (inventory.CellSize < 8) errors.Add("Vision.Inventory.CellSize must be >= 8.");
+        if (inventory.MaxIconDifference is <= 0 or > 1) errors.Add("Vision.Inventory.MaxIconDifference must be in (0, 1].");
+        foreach (var (slot, name) in new[] { (slots.Hp, "Hp"), (slots.Mp, "Mp"), (slots.Stm, "Stm") })
+        {
+            if (slot.Width != inventory.CellSize || slot.Height != inventory.CellSize)
+                errors.Add($"Vision.PotionSlots.{name} must be {inventory.CellSize}x{inventory.CellSize} (Vision.Inventory.CellSize).");
+        }
+
+        var restock = config.Potions.Restock;
+        CheckKey(restock.InventoryKey, "Potions.Restock.InventoryKey");
+        CheckKey(restock.PageKey, "Potions.Restock.PageKey");
+        if (restock.BelowCount is < 1 or > 99) errors.Add("Potions.Restock.BelowCount must be 1-99.");
+        if (restock.ConfirmTicks < 1) errors.Add("Potions.Restock.ConfirmTicks must be >= 1.");
+        if (restock.StepDelayMs < 0 || restock.RetryAfterSeconds < 0) errors.Add("Potions.Restock.StepDelayMs/RetryAfterSeconds must be >= 0.");
+        if (restock.ToggleTimeoutMs <= 0) errors.Add("Potions.Restock.ToggleTimeoutMs must be positive.");
+        if (!client.Contains(new PixelRect(restock.MouseRest.X, restock.MouseRest.Y, 1, 1)))
+            errors.Add("Potions.Restock.MouseRest must be inside the client area.");
+        else if (inventory.Grid.Contains(new PixelRect(restock.MouseRest.X, restock.MouseRest.Y, 1, 1)))
+            errors.Add("Potions.Restock.MouseRest must not be over the inventory grid.");
 
         return errors;
 

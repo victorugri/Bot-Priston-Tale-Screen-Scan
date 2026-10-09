@@ -1,3 +1,5 @@
+using BotPriston.Core.Geometry;
+
 namespace BotPriston.Core.Config;
 
 /// <summary>Timing of simulated input. Every action is followed by a pause; jitter avoids a fixed rhythm.</summary>
@@ -57,6 +59,41 @@ public sealed class PotionsConfig
 
     /// <summary>How long an out-of-stock potion is left alone before trying again.</summary>
     public int RetryAfterSeconds { get; set; } = 60;
+
+    public RestockConfig Restock { get; set; } = new();
+}
+
+/// <summary>
+/// Refill the hotbar from the inventory: with the inventory open, hovering a potion and pressing
+/// Shift + the potion's key adds that stack to the hotbar slot (same potion only).
+/// </summary>
+public sealed class RestockConfig
+{
+    public bool Enabled { get; set; }
+
+    /// <summary>Refill a potion when its hotbar stack is below this (an empty slot counts as 0).</summary>
+    public int BelowCount { get; set; } = 5;
+
+    /// <summary>Opens/closes the inventory.</summary>
+    public string InventoryKey { get; set; } = "V";
+
+    /// <summary>Switches between inventory pages 1 and 2.</summary>
+    public string PageKey { get; set; } = "E";
+
+    /// <summary>Ticks in a row the low count must be read before acting (guards against a misread).</summary>
+    public int ConfirmTicks { get; set; } = 3;
+
+    /// <summary>Pause after each key press or mouse move before looking at the screen again.</summary>
+    public int StepDelayMs { get; set; } = 350;
+
+    /// <summary>How long to wait for the inventory to open or close.</summary>
+    public int ToggleTimeoutMs { get; set; } = 2000;
+
+    /// <summary>A potion that isn't in the inventory (or didn't refill) is left alone this long.</summary>
+    public int RetryAfterSeconds { get; set; } = 300;
+
+    /// <summary>Where the mouse waits while the inventory is read: away from the grid (no hover highlight).</summary>
+    public PixelPoint MouseRest { get; set; }
 }
 
 public sealed class PotionConfig

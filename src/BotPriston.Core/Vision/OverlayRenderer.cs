@@ -80,6 +80,17 @@ public sealed class OverlayRenderer(VisionConfig config)
                 Cv2.Circle(canvas, new Point(orb.Center.X, orb.Center.Y), orb.Radius + 2, state.Ready ? Ok : Bad, 1, LineTypes.AntiAlias);
             lines.Add(($"Skills: {skills}", Roi));
         }
+        if (snapshot.Potions is { } potions)
+        {
+            foreach (var (cell, slot) in new[] { (config.PotionSlots.Stm, potions.Stm), (config.PotionSlots.Hp, potions.Hp), (config.PotionSlots.Mp, potions.Mp) })
+                Cv2.Rectangle(canvas, cell.ToCvRect(), slot.Left is null ? Bad : Ok, 1);
+            lines.Add(($"Hotbar potions: {potions}", Roi));
+        }
+        if (snapshot.Inventory is { } inventory)
+        {
+            Cv2.Rectangle(canvas, config.Inventory.Roi.ToCvRect(), inventory.Open ? Ok : Roi, 1);
+            lines.Add(($"Inventory: {inventory}", Roi));
+        }
         if (cursor is { } cr)
             lines.Add(($"Cursor at {cr.Mouse}: {cr.Reading}", cr.Reading.Kind == CursorKind.Enemy ? Bad : Ok));
 

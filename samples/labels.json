@@ -31,6 +31,18 @@
     "20261007_183857_cursor_ground.png": { "Hud": true, "Target": "Hovered", "Cursor": { "X": 725, "Y": 465, "Kind": "Neutral" },
                                            "Note": "probe frame (magenta marker drawn at the mouse); panel still shows a Coelho hovered earlier" },
     "20261007_183857_cursor_enemy.png":  { "Hud": true, "Cursor": { "X": 762, "Y": 400, "Kind": "Enemy" },
-                                           "Note": "probe frame; a Coelho hidden behind the character is under the cursor" }
+                                           "Note": "probe frame; a Coelho hidden behind the character is under the cursor" },
+
+    // Potions = hotbar stack sizes (Stm/Hp/Mp = keys 1/2/3). InventoryPage: 0 = inventory closed.
+    "20261007_183857_cursor_enemy.png#potions": { "Potions": { "Stm": 12, "Hp": 32, "Mp": 17 }, "InventoryPage": 0 },
+    "20261007_112426_364_farm.png#potions":     { "Potions": { "Hp": 24, "Mp": 24 }, "InventoryPage": 0, "Note": "slot 1 holds a jar whose highlight looks like a digit" },
+    "20261007_173908_228_farm.png#potions":     { "Potions": { "Stm": 13, "Hp": 34, "Mp": 5 } },
+    "20261007_175005_930_full.png#potions":     { "Potions": { "Stm": 13, "Hp": 34, "Mp": 4 } },
+    "20261008_142318_518_inv_closed.png":       { "Hud": true, "Potions": { "Stm": 34, "Hp": 34, "Mp": 10 }, "InventoryPage": 0, "Note": "town" },
+    "20261008_142444_589_inv.png":              { "Hud": true, "Potions": { "Stm": 34, "Hp": 34, "Mp": 10 }, "InventoryPage": 1 },
+    "20261008_142454_233_inv.png":              { "Hud": true, "InventoryPage": 1, "Note": "mouse over an inventory potion: cell lit, tooltip above the window" },
+    "20261008_142500_373_inv.png":              { "Hud": true, "Potions": { "Stm": 34, "Hp": 34, "Mp": 10 }, "InventoryPage": 2, "Note": "page 2 is empty" },
+    "20261008_142547_447_inv.png":              { "Hud": true, "Potions": { "Stm": 33, "Hp": 34, "Mp": 10 }, "InventoryPage": 1, "Note": "cursor tip on the STM cell" },
+    "20261008_142553_615_inv.png":              { "Hud": true, "Potions": { "Stm": 34, "Hp": 34, "Mp": 10 }, "InventoryPage": 1, "Note": "big item tooltip over the window" }
   }
 }

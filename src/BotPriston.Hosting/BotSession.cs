@@ -82,8 +82,17 @@ public sealed class BotSession : IDisposable
                 name, potion.Enabled ? "on" : "off", potion.Key, potion.BelowPercent, potion.CooldownMs);
         }
 
+        var restock = config.Potions.Restock;
+        PotionRestocker? restocker = null;
+        if (restock.Enabled)
+        {
+            restocker = new PotionRestocker(config.Potions, new PipelineRestockVision(vision), capture, input, TimeProvider.System, log);
+            log.Information("Restock on: refill a hotbar potion from the inventory ({Inventory}, page {Page}) when fewer than {Below} are left",
+                restock.InventoryKey, restock.PageKey, restock.BelowCount);
+        }
+
         var runner = new BotRunner(config, capture, vision, input, window, control, TimeProvider.System, log,
-            CreateBrain(config, input, capture, vision, log));
+            CreateBrain(config, input, capture, vision, log), restocker);
 
         SessionRecorder? recorder = null;
         if (options.Record)
@@ -161,6 +170,7 @@ public sealed class BotSession : IDisposable
             _thread.Join(TimeSpan.FromSeconds(5));
         }
         _hotkeys.Dispose();
+        Runner.Restocker?.Dispose();
         _vision.Dispose();
         _capture.Dispose();
         _cancel.Dispose();

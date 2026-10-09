@@ -205,6 +205,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial double Hp { get; set; }
     [ObservableProperty] public partial double Mp { get; set; }
     [ObservableProperty] public partial double Stm { get; set; }
+    [ObservableProperty] public partial string HpPotions { get; set; } = "";
+    [ObservableProperty] public partial string MpPotions { get; set; } = "";
+    [ObservableProperty] public partial string StmPotions { get; set; } = "";
 
     private void Refresh()
     {
@@ -221,7 +224,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 RunnerState.HudHidden => "Interface do jogo não visível",
                 _ => "Parando...",
             };
-            ActivityText = runner.Brain?.State switch
+            ActivityText = runner.Restocker?.Busy == true ? "Pegando poções do inventário" : runner.Brain?.State switch
             {
                 BrainState.Recover => runner.State == RunnerState.Running ? "Recuperando" : "",
                 BrainState.SearchTarget => "Procurando alvo",
@@ -242,6 +245,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Hp = bars.Hp.Percent;
                 Mp = bars.Mp.Percent;
                 Stm = bars.Stm.Percent;
+            }
+            if (runner.LastSnapshot?.Potions is { } potions)
+            {
+                HpPotions = potions.Hp.Left?.ToString() ?? "?";
+                MpPotions = potions.Mp.Left?.ToString() ?? "?";
+                StmPotions = potions.Stm.Left?.ToString() ?? "?";
             }
             var elapsed = DateTimeOffset.Now - session.StartedAt;
             Elapsed = elapsed.TotalHours >= 1 ? elapsed.ToString(@"h\:mm\:ss") : elapsed.ToString(@"m\:ss");

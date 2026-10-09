@@ -100,6 +100,8 @@ public class HoverTargetFinderTests : IDisposable
         config.RadiusY = 300;
         config.MinRadius = 60;
         config.Step = 75;
+        config.ReachX = 0; // the whole area in reach unless a test says otherwise
+        config.ReachY = 0;
         return config;
     }
 
@@ -215,6 +217,48 @@ public class HoverTargetFinderTests : IDisposable
 
         Assert.Equal(FindOutcome.NothingFound, result.Outcome);
         Assert.Equal(finder.Points.Count, result.Probes);
+    }
+
+    [Fact]
+    public void PointsInReach_AreProbedFirst()
+    {
+        _config.ReachX = 130;
+        _config.ReachY = 95;
+
+        var points = SweepPattern.Generate(_config, 1600, 900);
+
+        int firstOut = points.ToList().FindIndex(p => !_config.InReach(p));
+        Assert.True(firstOut > 0);
+        Assert.All(points.Take(firstOut), p => Assert.True(_config.InReach(p)));
+        Assert.All(points.Skip(firstOut), p => Assert.False(_config.InReach(p)));
+    }
+
+    [Fact]
+    public void MonsterOutOfReach_IsReportedButNotATarget()
+    {
+        _config.ReachX = 130;
+        _config.ReachY = 95;
+        var input = new MouseTrackingInput();
+        var points = SweepPattern.Generate(_config, 1600, 900);
+        var far = points.First(p => !_config.InReach(p) && p.Y < _config.Anchor.Y - 100); // straight up: far on the map
+        var screen = new FakeScreen(input, (mouse, _) => Screen(mouse, overMonster: mouse == far));
+
+        var result = Finder(input, screen).Find(CancellationToken.None);
+
+        Assert.Equal(FindOutcome.OutOfReach, result.Outcome);
+        Assert.Equal(far, result.Target!.Point);
+        Assert.Equal(points.ToList().IndexOf(far) + 1, result.Probes); // stops there: everything closer was probed
+    }
+
+    [Fact]
+    public void WiderUnderAttackSearch_HasNoReachLimit()
+    {
+        _config.ReachX = 130;
+        _config.ReachY = 95;
+
+        var wide = _config.WithArea(450, 300, 75);
+
+        Assert.True(wide.InReach(new PixelPoint(_config.Anchor.X, _config.Anchor.Y - 250)));
     }
 
     [Fact]

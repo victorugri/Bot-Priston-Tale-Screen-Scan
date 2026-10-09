@@ -24,7 +24,7 @@ public static class DetectCommand
         using var csv = csvPath is null ? null : new StreamWriter(csvPath);
         csv?.WriteLine("file,hud_visible,hud_score,hp,mp,stm,target,target_hp,target_border");
 
-        Console.WriteLine($"{"File",-40} {"HUD",-10} {"HP",7} {"MP",7} {"STM",7}  Target");
+        Console.WriteLine($"{"File",-40} {"HUD",-10} {"HP",7} {"MP",7} {"STM",7}  {"Pots 1/2/3",-12} {"Inventory",-10} Target");
         foreach (var file in files.Files)
         {
             using var image = Cv2.ImRead(file, ImreadModes.Color);
@@ -38,7 +38,9 @@ public static class DetectCommand
             var s = vision.Analyze(image);
             var hud = s.Hud.Visible ? $"ok {s.Hud.Score:F2}" : $"-- {s.Hud.Score:F2}";
             string Pct(Func<Core.Vision.PlayerBars, double> pick) => s.Bars is null ? "-" : $"{pick(s.Bars):F1}";
-            Console.WriteLine($"{name,-40} {hud,-10} {Pct(b => b.Hp.Percent),7} {Pct(b => b.Mp.Percent),7} {Pct(b => b.Stm.Percent),7}  {s.Target?.ToString() ?? "-"}");
+            var pots = s.Potions is { } p ? $"{p.Stm}/{p.Hp}/{p.Mp}" : "-";
+            var inventory = s.Inventory is null ? "-" : s.Inventory.Open ? $"page {s.Inventory.Page?.ToString() ?? "?"}" : "closed";
+            Console.WriteLine($"{name,-40} {hud,-10} {Pct(b => b.Hp.Percent),7} {Pct(b => b.Mp.Percent),7} {Pct(b => b.Stm.Percent),7}  {pots,-12} {inventory,-10} {s.Target?.ToString() ?? "-"}");
 
             if (overlayDir is not null)
             {

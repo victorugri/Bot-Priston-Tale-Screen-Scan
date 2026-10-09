@@ -153,6 +153,7 @@
                                     <ColumnDefinition Width="40" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="44" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition /><RowDefinition /><RowDefinition />
@@ -160,12 +161,15 @@
                                 <TextBlock Grid.Row="0" Text="HP" Style="{StaticResource Label}" />
                                 <ProgressBar Grid.Row="0" Grid.Column="1" Value="{Binding Hp, Mode=OneWay}" Foreground="{StaticResource Bad}" />
                                 <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Hp, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding HpPotions}" Style="{StaticResource PotionCount}" />
                                 <TextBlock Grid.Row="1" Text="MP" Style="{StaticResource Label}" />
                                 <ProgressBar Grid.Row="1" Grid.Column="1" Value="{Binding Mp, Mode=OneWay}" Foreground="{StaticResource Accent}" />
                                 <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Mp, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding MpPotions}" Style="{StaticResource PotionCount}" />
                                 <TextBlock Grid.Row="2" Text="STM" Style="{StaticResource Label}" />
                                 <ProgressBar Grid.Row="2" Grid.Column="1" Value="{Binding Stm, Mode=OneWay}" Foreground="{StaticResource Good}" />
                                 <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Stm, StringFormat={}{0:F0}%}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding StmPotions}" Style="{StaticResource PotionCount}" />
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -249,6 +253,18 @@
                                         <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding Config.Potions.Stm.BelowPercent}" />
                                         <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding Config.Potions.Stm.CooldownMs}" />
                                     </Grid>
+
+                                    <CheckBox Content="Pegar poções do inventário quando acabarem" IsChecked="{Binding Config.Potions.Restock.Enabled}"
+                                              Margin="0,8,0,0"
+                                              ToolTip="Assim que a barra fica baixa (mesmo lutando): abre o inventário (V), passa o mouse na mesma poção da barra e aperta Shift + tecla. Procura na página 2 (E) se precisar." />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Repor quando a barra tiver menos de" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Column="1" Text="{Binding Config.Potions.Restock.BelowCount}" />
+                                    </Grid>
                                 </StackPanel>
                             </Border>
 
@@ -257,6 +273,8 @@
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
                                     <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
+                                    <CheckBox Content="ATK contínuo ligado no jogo (clica 1 vez no mob)" IsChecked="{Binding Config.Combat.AutoAttack}"
+                                              ToolTip="Ligue junto com o botão de ATK contínuo do jogo (ao lado do minimapa): o bot clica uma vez no mob e espera ele morrer, em vez de segurar o botão." />
                                     <CheckBox Content="Usar a skill do botão direito quando pronta" IsChecked="{Binding Config.Combat.RightSkill.Enabled}" />
                                     <Grid Margin="0,4,0,0">
                                         <Grid.ColumnDefinitions>
@@ -265,18 +283,23 @@
                                             <ColumnDefinition Width="64" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
                                         </Grid.RowDefinitions>
                                         <TextBlock Text="Mana mínima p/ skill direita (%)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Column="2" Text="{Binding Config.Combat.RightSkill.MinMpPercent}" />
 
                                         <TextBlock Grid.Row="1" Text="Alcance da busca (px, largura × altura)" Style="{StaticResource Label}"
-                                                   ToolTip="Área em volta do personagem onde o mouse procura mobs. Maior = vai atrás de mobs mais longe." />
+                                                   ToolTip="Área em volta do personagem onde o mouse procura mobs. Primeiro procura dentro do alcance do ataque; os mobs mais longe são só vistos (o bot espera eles chegarem)." />
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Targeting.RadiusX}" />
                                         <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding Config.Targeting.RadiusY}" />
 
-                                        <TextBlock Grid.Row="2" Text="Desistir do alvo sem dano após (s)" Style="{StaticResource Label}" />
-                                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding Config.Combat.NoProgressSeconds}" />
+                                        <TextBlock Grid.Row="2" Text="Alcance do ataque (px, largura × altura)" Style="{StaticResource Label}"
+                                                   ToolTip="Só clica em mobs dentro desta área: clicar num mob mais longe faz o personagem andar até ele. Os mais longe são ignorados até chegarem perto." />
+                                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Targeting.ReachX}" />
+                                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding Config.Targeting.ReachY}" />
+
+                                        <TextBlock Grid.Row="3" Text="Desistir do alvo sem dano após (s)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding Config.Combat.NoProgressSeconds}" />
                                     </Grid>
 
                                     <CheckBox Content="Atacar quem me ataca de longe" IsChecked="{Binding Config.Combat.UnderAttack.Enabled}" Margin="0,8,0,0"

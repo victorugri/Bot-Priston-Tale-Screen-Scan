@@ -51,6 +51,7 @@ public sealed class CombatBrain
     private readonly ITargetFinder? _wideFinder;
     private readonly Queue<(DateTimeOffset At, double Hp)> _hpHistory = new();
     private bool _wideTarget; // current target came from the wider "under attack" search
+    private DateTimeOffset _lastClick, _lastReacquire; // continuous-attack mode
 
     /// <param name="wideFinder">Wider search used only when losing HP with nothing in reach (Combat.UnderAttack).</param>
     public CombatBrain(CombatConfig config, ITargetFinder finder, ICursorReader cursor, IInputSink input,
@@ -87,6 +88,15 @@ public sealed class CombatBrain
     /// <summary>Distant attackers engaged through the wider search.</summary>
     public int WideTargets { get; private set; }
 
+    /// <summary>Continuous-attack mode: clicks on a target whose HP had stopped dropping.</summary>
+    public int Reclicks { get; private set; }
+
+    /// <summary>Searches that only saw monsters out of attack reach (left alone).</summary>
+    public int OutOfReachSeen { get; private set; }
+
+    /// <summary>Attacks started (each one a click or press on a monster).</summary>
+    public int Engagements { get; private set; }
+
     /// <summary>
     /// Whether a potion is taking care of a bar. Rest is only for bars no potion can refill
     /// (disabled or out of stock). Null = no potions at all.
@@ -96,7 +106,8 @@ public sealed class CombatBrain
     public string Summary =>
         (Kills == 0 ? "0 kills" : $"{Kills} kills (avg {_killTimes.Average(t => t.TotalSeconds):F1}s each)") +
         $", {GivenUp} targets given up, right skill cast {RightSkillUses}x ({RightSkillMisses} attempts without effect)" +
-        $", walking stopped {WalkStops}x, distant attackers engaged {WideTargets}x";
+        $", walking stopped {WalkStops}x, distant attackers engaged {WideTargets}x" +
+        (_config.AutoAttack ? $", targets re-clicked {Reclicks}x" : "");
 
     /// <summary>One decision. <paramref name="frame"/> is the image <paramref name="snapshot"/> came from.</summary>
     public void Tick(VisionSnapshot snapshot, Mat frame, CancellationToken interrupt)
@@ -187,7 +198,7 @@ public sealed class CombatBrain
         var result = _finder.Find(interrupt);
 
         // Nothing in reach but losing HP: something attacks from a distance. Look farther, once.
-        if (result.Outcome == FindOutcome.NothingFound && _wideFinder is not null && _config.UnderAttack.Enabled
+        if (result.Outcome is FindOutcome.NothingFound or FindOutcome.OutOfReach && _wideFinder is not null && _config.UnderAttack.Enabled
             && HpDrop() is var drop && drop >= _config.UnderAttack.HpDropPercent)
         {
             _log.Information("Losing HP ({Drop:F0}% in {Window}s) with no monster in reach: searching a wider area",
@@ -210,6 +221,11 @@ public sealed class CombatBrain
             case FindOutcome.NothingFound:
                 _nextSearchAt = _time.GetUtcNow() + TimeSpan.FromMilliseconds(_config.SearchRetryMs);
                 break;
+            case FindOutcome.OutOfReach:
+                // Never clicked (the character would walk to it); it is probably coming closer.
+                OutOfReachSeen++;
+                _nextSearchAt = _time.GetUtcNow() + TimeSpan.FromMilliseconds(_config.OutOfReachRetryMs);
+                break;
             case FindOutcome.Aborted:
                 break; // paused / focus lost: the runner takes it from here
         }
@@ -224,19 +240,20 @@ public sealed class CombatBrain
             return;
         }
 
-        if (!PressLeft())
+        if (!StartAttack())
         {
             Go(BrainState.SearchTarget, "attack click refused");
             return;
         }
 
         var now = _time.GetUtcNow();
+        Engagements++;
         _seenAlive = false;
         _lastTargetHp = null;
         _cursorLostSince = null;
         _targetSince = now;
         _lastDamage = now;
-        Go(BrainState.Attack, $"holding attack on {_aim}");
+        Go(BrainState.Attack, _config.AutoAttack ? $"clicked {_aim} (continuous attack)" : $"holding attack on {_aim}");
     }
 
     private void TickAttack(VisionSnapshot snapshot, Mat frame, CancellationToken interrupt)
@@ -277,6 +294,12 @@ public sealed class CombatBrain
         if (now - _targetSince >= TimeSpan.FromSeconds(_config.MaxTargetSeconds))
         {
             GiveUp($"still alive after {_config.MaxTargetSeconds}s");
+            return;
+        }
+
+        if (_config.AutoAttack)
+        {
+            TickAutoAttack(snapshot, frame, now, interrupt);
             return;
         }
 
@@ -365,8 +388,75 @@ public sealed class CombatBrain
     private void BackToLeft()
     {
         ReleaseRight();
-        if (!PressLeft())
+        if (!StartAttack())
             Go(BrainState.SearchTarget, "attack click refused");
+    }
+
+    /// <summary>
+    /// Continuous attack: the game keeps attacking the clicked monster by itself, so nothing is held and
+    /// the cursor leaving the monster doesn't matter. The mouse only comes back to it (hover, no click) to
+    /// click again when its HP stopped dropping, or to cast the right skill. A click or a held button
+    /// only ever happens with the cursor gem red: on the ground it would make the character walk.
+    /// </summary>
+    private void TickAutoAttack(VisionSnapshot snapshot, Mat frame, DateTimeOffset now, CancellationToken interrupt)
+    {
+        bool onTarget = _cursor.Detect(frame, _aim!.Value).Kind == CursorKind.Enemy;
+
+        if (_holdingRightSince is not null)
+        {
+            if (onTarget)
+            {
+                UpdateRightSkill(snapshot, now);
+            }
+            else
+            {
+                ReleaseRight();
+                _log.Debug("Monster left the cursor while holding the right button: released");
+            }
+            return;
+        }
+
+        var reclick = TimeSpan.FromMilliseconds(_config.ReclickMs);
+        bool wantsClick = now - _lastDamage >= reclick && now - _lastClick >= reclick;
+        bool wantsSkill = RightSkillWanted(snapshot, now);
+        if (!wantsClick && !wantsSkill) return;
+
+        if (!onTarget)
+        {
+            // Bring the cursor back over the monster (hover only); act on a later, fresh frame.
+            if (now - _lastReacquire < TimeSpan.FromMilliseconds(_config.LostTargetGraceMs)) return;
+            _lastReacquire = now;
+            var finder = _wideTarget && _wideFinder is not null ? _wideFinder : _finder;
+            var result = finder.Find(interrupt, _aim, _config.ReacquireRadius);
+            if (result.Outcome == FindOutcome.Found)
+                _aim = result.Target!.Point;
+            return;
+        }
+
+        if (wantsSkill)
+        {
+            UpdateRightSkill(snapshot, now);
+            return;
+        }
+
+        if (StartAttack())
+        {
+            Reclicks++;
+            _log.Information("No damage for {Ms} ms: clicked the target again at {Point}", _config.ReclickMs, _aim);
+        }
+    }
+
+    private bool RightSkillWanted(VisionSnapshot snapshot, DateTimeOffset now) =>
+        _config.RightSkill.Enabled && now >= _nextRightTryAt && snapshot.Skills is { Right.Ready: true }
+        && snapshot.Bars!.Mp.Percent >= _config.RightSkill.MinMpPercent;
+
+    /// <summary>Hold the left button, or with continuous attack a single click. The cursor must be on the monster.</summary>
+    private bool StartAttack()
+    {
+        if (!_config.AutoAttack) return PressLeft();
+        if (!_input.Click(MouseButton.Left)) return false;
+        _lastClick = _time.GetUtcNow();
+        return true;
     }
 
     private void LogRightIcon(VisionSnapshot snapshot)

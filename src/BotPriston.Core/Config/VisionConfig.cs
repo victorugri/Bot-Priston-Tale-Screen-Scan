@@ -11,6 +11,57 @@ public sealed class VisionConfig
     public CursorConfig Cursor { get; set; } = new();
     public SkillOrbsConfig SkillOrbs { get; set; } = new();
     public MotionConfig Motion { get; set; } = new();
+    public PotionSlotsConfig PotionSlots { get; set; } = new();
+    public ItemCountConfig ItemCount { get; set; } = new();
+    public InventoryConfig Inventory { get; set; } = new();
+}
+
+/// <summary>Where each potion sits in the hotbar (one 22x22 item cell each; the stack size is printed on it).</summary>
+public sealed class PotionSlotsConfig
+{
+    public PixelRect Hp { get; set; }
+    public PixelRect Mp { get; set; }
+    public PixelRect Stm { get; set; }
+
+    /// <summary>Fraction of bright pixels in the lower part of a cell for it to hold an item (empty cells have ~0).</summary>
+    public double MinItemFraction { get; set; } = 0.15;
+}
+
+/// <summary>The white stack size printed in the top-left corner of an item cell (hotbar and inventory).</summary>
+public sealed class ItemCountConfig
+{
+    /// <summary>Rows from the top of the cell to the top of the digits.</summary>
+    public int DigitsTop { get; set; } = 5;
+
+    /// <summary>A pixel is part of a digit when all its channels are at least this bright...</summary>
+    public int MinWhite { get; set; } = 232;
+
+    /// <summary>...and its channels differ by at most this much (pure white; the icons' highlights are tinted).</summary>
+    public int MaxWhiteSpread { get; set; } = 24;
+
+    /// <summary>Minimum match (0-1) between a digit's shape and the pixels for it to be read.</summary>
+    public double MinGlyphScore { get; set; } = 0.75;
+}
+
+/// <summary>The inventory window (bottom-left, toggled with a key) and its item grid.</summary>
+public sealed class InventoryConfig
+{
+    /// <summary>Fixed piece of the open inventory (its "!" and "▲" buttons), cut from a screenshot.</summary>
+    public string TemplatePath { get; set; } = "";
+    public PixelRect Roi { get; set; }
+    public int SearchMargin { get; set; } = 3;
+    public double MinScore { get; set; } = 0.8;
+
+    /// <summary>Item grid: the top-left cell starts at (X, Y); Width/Height cover all cells.</summary>
+    public PixelRect Grid { get; set; }
+    public int CellSize { get; set; } = 22;
+
+    /// <summary>The page buttons: the one of the page on screen is lit (orange).</summary>
+    public PixelRect Page1Button { get; set; }
+    public PixelRect Page2Button { get; set; }
+
+    /// <summary>Largest difference (0-1, normalized squared difference) between two icons of the same item.</summary>
+    public double MaxIconDifference { get; set; } = 0.12;
 }
 
 /// <summary>Walking detection from the ground sliding between frames (see MotionDetector).</summary>
@@ -33,6 +84,15 @@ public sealed class MotionConfig
 
     /// <summary>Frames in a row with movement before it is called walking (hit effects shake 1 frame).</summary>
     public int ConsecutiveFrames { get; set; } = 3;
+
+    /// <summary>
+    /// After each attack click, the ground is watched this long: a monster out of reach makes the character
+    /// step towards it (too short to count as walking). Logged to calibrate Targeting.ReachX/ReachY.
+    /// </summary>
+    public int AttackStepWatchMs { get; set; } = 800;
+
+    /// <summary>Ground slide (sum over the watch) from which an attack counts as having made the character step.</summary>
+    public double AttackStepMinPx { get; set; } = 10;
 }
 
 public sealed class SkillOrbsConfig

@@ -78,6 +78,98 @@ public class CombatBrainTests : IDisposable
     }
 
     [Fact]
+    public void MonsterOutOfReach_IsNeverClicked_SearchesAgainSoon()
+    {
+        _config.OutOfReachRetryMs = 300;
+        _config.SearchRetryMs = 1500;
+        var brain = Brain();
+        _finder.Results.Enqueue(new FindResult(FindOutcome.OutOfReach,
+            new TargetFound(new PixelPoint(860, 361), new CursorReading(CursorKind.Enemy, 50, 0), new TargetPanel(TargetStatus.Hovered, 1, null), 9, TimeSpan.Zero),
+            9, TimeSpan.Zero));
+        Tick(brain); // Recover -> SearchTarget
+        Tick(brain); // sees it out of reach
+
+        Assert.Empty(_input.Actions);
+        Assert.Equal(BrainState.SearchTarget, brain.State);
+        Assert.Equal(1, brain.OutOfReachSeen);
+
+        _finder.WillFind(Monster); // it came closer
+        _time.Advance(TimeSpan.FromMilliseconds(300));
+        Tick(brain);
+        Assert.Equal(BrainState.Engage, brain.State);
+    }
+
+    [Fact]
+    public void AutoAttack_ClicksOnce_AndWaitsForTheKill()
+    {
+        _config.AutoAttack = true;
+        var brain = Attacking();
+        _cursor.Kind = CursorKind.Neutral; // the monster walks off the cursor: the game keeps attacking anyway
+        for (int i = 0; i < 5; i++)
+        {
+            _time.Advance(TimeSpan.FromMilliseconds(300));
+            Tick(brain, FakeVision.Target(TargetStatus.Engaged, 90 - 10 * i));
+        }
+
+        Tick(brain, FakeVision.Target(TargetStatus.Dead, 0));
+
+        Assert.Equal(["click Left"], _input.Actions);
+        Assert.Single(_finder.Calls); // no re-acquire while the HP keeps dropping
+        Assert.Equal(1, brain.Kills);
+        Assert.Equal(BrainState.Recover, brain.State);
+    }
+
+    [Fact]
+    public void AutoAttack_NoDamage_ClicksAgain_OnlyWithTheCursorOnTheMonster()
+    {
+        _config.AutoAttack = true;
+        _config.ReclickMs = 2000;
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80));
+        _cursor.Kind = CursorKind.Neutral;
+        _time.Advance(TimeSpan.FromMilliseconds(2000));
+        _finder.WillFind(new PixelPoint(900, 470));
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80)); // off the monster: hover it again, no click
+        Assert.Equal(["click Left"], _input.Actions);
+        Assert.Equal(new PixelPoint(900, 470), brain.Aim);
+
+        _cursor.Kind = CursorKind.Enemy;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80));
+
+        Assert.Equal(["click Left", "click Left"], _input.Actions);
+        Assert.Equal(1, brain.Reclicks);
+    }
+
+    [Fact]
+    public void AutoAttack_RightSkill_HeldOnTheMonster_ThenClickToResume()
+    {
+        _config.AutoAttack = true;
+        var brain = Attacking();
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true);
+        Assert.Equal(["click Left", "down Right"], _input.Actions);
+
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 70), rightReady: false); // icon gray: cast
+
+        Assert.Equal(["click Left", "down Right", "up Right", "click Left"], _input.Actions);
+        Assert.Equal(1, brain.RightSkillUses);
+    }
+
+    [Fact]
+    public void AutoAttack_MonsterLeavesWhileHoldingRight_ReleasesAtOnce()
+    {
+        _config.AutoAttack = true;
+        var brain = Attacking();
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true);
+
+        _cursor.Kind = CursorKind.Neutral;
+        Tick(brain, FakeVision.Target(TargetStatus.Engaged, 80), rightReady: true);
+
+        Assert.Equal(["click Left", "down Right", "up Right"], _input.Actions);
+    }
+
+    [Fact]
     public void FoundMonster_IsAttackedByHoldingTheLeftButton()
     {
         var brain = Attacking();

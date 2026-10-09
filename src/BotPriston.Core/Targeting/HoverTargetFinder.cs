@@ -44,6 +44,7 @@ public sealed class HoverTargetFinder : ITargetFinder
     {
         var watch = Stopwatch.StartNew();
         int probes = 0;
+        TargetFound? outOfReach = null;
         foreach (var point in PointsFor(near, maxDistance))
         {
             if (cancel.IsCancellationRequested)
@@ -62,11 +63,25 @@ public sealed class HoverTargetFinder : ITargetFinder
             if (Read(point) is { Cursor.Kind: CursorKind.Enemy } confirmed)
             {
                 var found = new TargetFound(point, confirmed.Cursor, confirmed.Panel, probes, watch.Elapsed);
+                if (!_config.InReach(point))
+                {
+                    // Points in reach are probed first: in a full sweep nothing closer is left to find.
+                    outOfReach ??= found;
+                    if (near is null) break;
+                    continue;
+                }
                 _log.Information("Target found at {Point} after {Probes} probes in {Ms:F0} ms (cursor {Cursor}, panel {Panel})",
                     point, probes, watch.Elapsed.TotalMilliseconds, confirmed.Cursor, confirmed.Panel);
                 return new FindResult(FindOutcome.Found, found, probes, watch.Elapsed);
             }
             _log.Debug("Hit at {Point} not confirmed", point);
+        }
+
+        if (outOfReach is not null)
+        {
+            _log.Information("Monster at {Point} is out of attack reach ({Reach:F2} x reach): not clicking it ({Probes} probes, {Ms:F0} ms)",
+                outOfReach.Point, _config.ReachDistance(outOfReach.Point), probes, watch.Elapsed.TotalMilliseconds);
+            return new FindResult(FindOutcome.OutOfReach, outOfReach, probes, watch.Elapsed);
         }
 
         _log.Information("No target in {Probes} probes ({Ms:F0} ms)", probes, watch.Elapsed.TotalMilliseconds);

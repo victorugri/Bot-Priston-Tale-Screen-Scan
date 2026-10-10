@@ -47,6 +47,45 @@ public class EarthquakeTests
     }
 
     [Fact]
+    public void EveryTwoMinutes_FindsAMonster_HitsItOnceWithTheLeftButton()
+    {
+        _config.Safety.WatchdogSeconds = 600; // the test jumps 2 minutes in one step
+        var finder = new ScriptedFinder();
+        var caster = new EarthquakeCaster(_config.Combat.Earthquake, _input, _time, TestLog.Silent, finder);
+        var runner = new BotRunner(_config, new FakeCapture(), _vision, _input, new FakeWindow(), new BotControl(), _time,
+            TestLog.Silent, earthquake: caster);
+
+        runner.Tick();                                   // first earthquake
+        _time.Advance(TimeSpan.FromSeconds(120));
+        finder.WillFind(new PixelPoint(860, 465));
+        runner.Tick();                                   // 2 min: hover sweep + one left click
+        runner.Tick();                                   // back to the earthquake
+
+        Assert.Equal(["move (800,450)", "click Right", "click Left", "move (800,450)", "click Right"], _input.Actions);
+        Assert.Equal(1, caster.LeftAttacks);
+        Assert.Single(finder.Calls);
+    }
+
+    [Fact]
+    public void LeftAttack_NoMonsterInReach_RetriesSoon_WithoutClicking()
+    {
+        var finder = new ScriptedFinder(); // finds nothing
+        var caster = new EarthquakeCaster(_config.Combat.Earthquake, _input, _time, TestLog.Silent, finder);
+        _time.Advance(TimeSpan.FromSeconds(120));
+
+        caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
+        Assert.DoesNotContain("click Left", _input.Actions);
+
+        _time.Advance(TimeSpan.FromSeconds(9));
+        caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
+        Assert.Single(finder.Calls);                     // not yet
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
+        Assert.Equal(2, finder.Calls.Count);
+    }
+
+    [Fact]
     public void PotionComesFirst()
     {
         var runner = Runner(out var caster);

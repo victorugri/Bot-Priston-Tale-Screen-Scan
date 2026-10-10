@@ -95,8 +95,11 @@ public sealed class BotSession : IDisposable
         EarthquakeCaster? earthquake = null;
         if (quake.Enabled)
         {
-            earthquake = new EarthquakeCaster(quake, input, TimeProvider.System, log);
-            log.Information("Earthquake mode: right click at {Point} every {Interval} ms (no target search)", quake.Point, quake.IntervalMs);
+            var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
+                input, capture, vision.Cursor, vision.TargetPanel, log);
+            earthquake = new EarthquakeCaster(quake, input, TimeProvider.System, log, finder);
+            log.Information("Earthquake mode: right click at {Point} every {Interval} ms; {LeftAttack}", quake.Point, quake.IntervalMs,
+                quake.LeftAttackEverySeconds > 0 ? $"one left attack on a monster every {quake.LeftAttackEverySeconds}s" : "no left attack");
         }
 
         var runner = new BotRunner(config, capture, vision, input, window, control, TimeProvider.System, log,

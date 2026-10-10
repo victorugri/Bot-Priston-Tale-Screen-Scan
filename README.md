@@ -105,6 +105,7 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 **Modo terremoto** (`Combat.Earthquake`, opção "Modo terremoto" na janela): para skill de área.
 - O bot não procura nem ataca mob. Ele só **clica com o botão direito no meio da tela (800, 450) a cada 1 s** (`IntervalMs`).
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
+- **A cada 2 min** (`LeftAttackEverySeconds`), passa o mouse procurando um mob dentro do alcance do ataque e dá **um clique esquerdo** nele, depois volta ao terremoto. Isso é para quando os mobs colados no personagem param de tomar dano do terremoto (só "Block"/"Defense"). Se não houver mob no alcance, tenta de novo em 10 s.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.
 - O contador "Skill direita" da janela mostra quantos terremotos foram lançados.
 
@@ -217,7 +218,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 196 testes, todos sem precisar do jogo:
+São 198 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

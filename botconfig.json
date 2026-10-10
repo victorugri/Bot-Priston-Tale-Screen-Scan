@@ -224,7 +224,9 @@
       "Enabled": false,           // every IntervalMs (area skill hits everything around); potions keep working
       "Point": { "X": 800, "Y": 450 },
       "IntervalMs": 1000,
-      "MinMpPercent": 0           // hold the casts below this much mana (0 = always cast)
+      "MinMpPercent": 0,          // hold the casts below this much mana (0 = always cast)
+      "LeftAttackEverySeconds": 120,  // every 2 min: find a monster in reach and hit it once with the left button
+      "LeftAttackRetrySeconds": 10    // (brings the earthquake damage back); none in reach -> try again after this
     },
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,

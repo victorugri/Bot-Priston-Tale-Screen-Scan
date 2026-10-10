@@ -63,6 +63,16 @@ public sealed class EarthquakeConfig
 
     /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
     public double MinMpPercent { get; set; }
+
+    /// <summary>
+    /// Every this many seconds, look for a monster in reach (hover sweep) and hit it once with the left
+    /// button, then go back to the earthquake: monsters standing on the character stop taking earthquake
+    /// damage after a while, and a basic attack brings it back. 0 = never.
+    /// </summary>
+    public int LeftAttackEverySeconds { get; set; } = 120;
+
+    /// <summary>When that search finds no monster in reach, try again after this long.</summary>
+    public int LeftAttackRetrySeconds { get; set; } = 10;
 }
 
 /// <summary>

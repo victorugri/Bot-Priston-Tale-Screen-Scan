@@ -218,7 +218,7 @@ public sealed class BotRunner
         if (_earthquake is not null)
         {
             // No targets to track: alive with the HUD up and casting counts as progress.
-            _earthquake.Tick(snapshot.Bars);
+            _earthquake.Tick(snapshot.Bars, interrupt.Token);
             _progressWatchdog.Kick();
             return;
         }

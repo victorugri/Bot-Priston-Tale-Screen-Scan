@@ -143,6 +143,8 @@ public static class ConfigLoader
         var quake = combat.Earthquake;
         if (quake.IntervalMs < 100) errors.Add("Combat.Earthquake.IntervalMs must be >= 100.");
         if (quake.MinMpPercent is < 0 or > 100) errors.Add("Combat.Earthquake.MinMpPercent must be 0-100.");
+        if (quake.LeftAttackEverySeconds < 0 || quake.LeftAttackRetrySeconds < 1)
+            errors.Add("Combat.Earthquake.LeftAttackEverySeconds must be >= 0 and LeftAttackRetrySeconds >= 1.");
         if (!client.Contains(new PixelRect(quake.Point.X, quake.Point.Y, 1, 1)) || Targeting.SweepPattern.IsExcluded(quake.Point, targeting))
             errors.Add("Combat.Earthquake.Point must be inside the client area and outside Targeting.Exclusions.");
         if (motion.AttackStepWatchMs < 0 || motion.AttackStepMinPx <= 0)

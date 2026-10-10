@@ -47,19 +47,32 @@ public sealed class CombatConfig
 }
 
 /// <summary>
-/// Earthquake mode: an area skill cast with a right click in the middle of the screen hits every monster
-/// around, so there is nothing to look for. The bot just right-clicks there at a fixed rhythm (and keeps
-/// drinking and restocking potions). Replaces the hunt (search, attack, right skill) while enabled.
+/// Earthquake mode: area skills on the right button hit every monster around, so there is nothing to look
+/// for. Every cycle the bot picks one of the skill keys at random (they switch which skill the right
+/// button casts), moves the mouse slightly around the middle of the screen (a cursor that never moves
+/// makes casts stop counting) and right-clicks. Potions keep working. Replaces the hunt while enabled.
 /// </summary>
 public sealed class EarthquakeConfig
 {
     public bool Enabled { get; set; }
 
-    /// <summary>Where to right-click: the middle of the screen (the character).</summary>
+    /// <summary>Middle of the area where the mouse wanders (the character).</summary>
     public PixelPoint Point { get; set; } = new(800, 450);
 
-    /// <summary>Time between two casts.</summary>
-    public int IntervalMs { get; set; } = 1000;
+    /// <summary>The mouse goes to a random spot this far from <see cref="Point"/> at most, every cycle.</summary>
+    public int JitterPx { get; set; } = 25;
+
+    /// <summary>Time between two cycles (key + right click).</summary>
+    public int IntervalMs { get; set; } = 200;
+
+    /// <summary>Skill keys pressed before each right click, one per cycle, picked at random by weight. Empty = none.</summary>
+    public List<WeightedKey> Keys { get; set; } = [];
+
+    /// <summary>How long keys and the right button are held in this mode (shorter than Input.KeyHoldMs, to keep the pace).</summary>
+    public int KeyHoldMs { get; set; } = 30;
+
+    /// <summary>Minimum pause between two actions in this mode (replaces Input.ActionDelayMs).</summary>
+    public int ActionDelayMs { get; set; } = 20;
 
     /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
     public double MinMpPercent { get; set; }
@@ -69,10 +82,17 @@ public sealed class EarthquakeConfig
     /// button, then go back to the earthquake: monsters standing on the character stop taking earthquake
     /// damage after a while, and a basic attack brings it back. 0 = never.
     /// </summary>
-    public int LeftAttackEverySeconds { get; set; } = 120;
+    public int LeftAttackEverySeconds { get; set; }
 
     /// <summary>When that search finds no monster in reach, try again after this long.</summary>
     public int LeftAttackRetrySeconds { get; set; } = 10;
+}
+
+/// <summary>A key with its share of the random picks (weights don't have to add up to 1).</summary>
+public sealed class WeightedKey
+{
+    public string Key { get; set; } = "";
+    public double Weight { get; set; } = 1;
 }
 
 /// <summary>

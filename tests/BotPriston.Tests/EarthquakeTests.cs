@@ -20,7 +20,8 @@ public class EarthquakeTests
         },
         Combat = new CombatConfig
         {
-            Earthquake = new EarthquakeConfig { Enabled = true, Point = new PixelPoint(800, 450), IntervalMs = 1000 },
+            // No keys and a still mouse: the basic rhythm. The tests below add keys and the wandering.
+            Earthquake = new EarthquakeConfig { Enabled = true, Point = new PixelPoint(800, 450), IntervalMs = 1000, JitterPx = 0 },
         },
     };
 
@@ -50,6 +51,7 @@ public class EarthquakeTests
     public void EveryTwoMinutes_FindsAMonster_HitsItOnceWithTheLeftButton()
     {
         _config.Safety.WatchdogSeconds = 600; // the test jumps 2 minutes in one step
+        _config.Combat.Earthquake.LeftAttackEverySeconds = 120;
         var finder = new ScriptedFinder();
         var caster = new EarthquakeCaster(_config.Combat.Earthquake, _input, _time, TestLog.Silent, finder);
         var runner = new BotRunner(_config, new FakeCapture(), _vision, _input, new FakeWindow(), new BotControl(), _time,
@@ -69,6 +71,7 @@ public class EarthquakeTests
     [Fact]
     public void LeftAttack_NoMonsterInReach_RetriesSoon_WithoutClicking()
     {
+        _config.Combat.Earthquake.LeftAttackEverySeconds = 120;
         var finder = new ScriptedFinder(); // finds nothing
         var caster = new EarthquakeCaster(_config.Combat.Earthquake, _input, _time, TestLog.Silent, finder);
         _time.Advance(TimeSpan.FromSeconds(120));
@@ -83,6 +86,52 @@ public class EarthquakeTests
         _time.Advance(TimeSpan.FromSeconds(1));
         caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
         Assert.Equal(2, finder.Calls.Count);
+    }
+
+    [Fact]
+    public void EachCycle_OneWeightedRandomKey_ThenTheRightClick()
+    {
+        var quake = _config.Combat.Earthquake;
+        quake.IntervalMs = 200;
+        quake.Keys = [new() { Key = "F2", Weight = 0.2 }, new() { Key = "F3", Weight = 0.4 }, new() { Key = "F4", Weight = 0.4 }];
+        var caster = new EarthquakeCaster(quake, _input, _time, TestLog.Silent, random: new Random(7));
+
+        for (int i = 0; i < 1000; i++)
+        {
+            caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
+            _time.Advance(TimeSpan.FromMilliseconds(200));
+        }
+
+        Assert.Equal(1000, caster.Casts);
+        var keys = _input.Actions.Where(a => a.StartsWith("key ")).ToList();
+        Assert.Equal(1000, keys.Count);
+        Assert.InRange(keys.Count(k => k == "key F2"), 150, 250);   // ~20%
+        Assert.InRange(keys.Count(k => k == "key F3"), 350, 450);   // ~40%
+        Assert.InRange(keys.Count(k => k == "key F4"), 350, 450);   // ~40%
+        Assert.Equal(["key", "move", "click"], _input.Actions.Take(3).Select(a => a.Split(' ')[0]));
+        Assert.Equal("click Right", _input.Actions[2]);
+    }
+
+    [Fact]
+    public void TheMouseWandersSlightly_AroundTheMiddle()
+    {
+        var quake = _config.Combat.Earthquake;
+        quake.JitterPx = 25;
+        var caster = new EarthquakeCaster(quake, _input, _time, TestLog.Silent, random: new Random(3));
+
+        for (int i = 0; i < 200; i++)
+        {
+            caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
+            _time.Advance(TimeSpan.FromMilliseconds(quake.IntervalMs));
+        }
+
+        var spots = _input.Actions.Where(a => a.StartsWith("move ")).Distinct().ToList();
+        Assert.True(spots.Count > 50, "the cursor keeps moving");
+        foreach (var spot in spots)
+        {
+            var xy = spot[6..^1].Split(',').Select(int.Parse).ToArray();
+            Assert.True(Math.Sqrt(Math.Pow(xy[0] - 800, 2) + Math.Pow(xy[1] - 450, 2)) <= 25.5, spot);
+        }
     }
 
     [Fact]

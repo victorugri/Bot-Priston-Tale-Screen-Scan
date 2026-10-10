@@ -272,15 +272,15 @@
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
-                                    <CheckBox Content="Modo terremoto (só botão direito no meio da tela)" IsChecked="{Binding Config.Combat.Earthquake.Enabled}"
-                                              ToolTip="Não procura mob: clica com o botão direito no meio da tela a cada intervalo e continua tomando e repondo poções. Os ajustes de busca e ataque abaixo ficam sem efeito." />
+                                    <CheckBox Content="Modo terremoto (F2/F3/F4 + botão direito no meio da tela)" IsChecked="{Binding Config.Combat.Earthquake.Enabled}"
+                                              ToolTip="Não procura mob: a cada intervalo aperta F2, F3 ou F4 ao acaso (pesos 20/40/40%), mexe o mouse de leve em volta do meio da tela e clica com o botão direito. Continua tomando e repondo poções." />
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="64" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
                                         </Grid.RowDefinitions>
                                         <TextBlock Text="Terremoto a cada (ms)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Column="1" Text="{Binding Config.Combat.Earthquake.IntervalMs}" />
@@ -289,6 +289,8 @@
                                         <TextBlock Grid.Row="2" Text="Ataque esquerdo num mob a cada (s, 0 = nunca)" Style="{StaticResource Label}"
                                                    ToolTip="Procura um mob dentro do alcance do ataque, dá um clique esquerdo e volta ao terremoto. Ajuda quando os mobs param de tomar dano." />
                                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Combat.Earthquake.LeftAttackEverySeconds}" />
+                                        <TextBlock Grid.Row="3" Text="Mexer o mouse até (px do meio)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Combat.Earthquake.JitterPx}" />
                                     </Grid>
                                     <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
                                     <CheckBox Content="ATK contínuo ligado no jogo (clica 1 vez no mob)" IsChecked="{Binding Config.Combat.AutoAttack}"

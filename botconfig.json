@@ -220,13 +220,21 @@
     "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
     "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
     "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
-    "Earthquake": {               // earthquake mode: no hunting, just a right click in the middle of the screen
-      "Enabled": false,           // every IntervalMs (area skill hits everything around); potions keep working
+    "Earthquake": {               // earthquake mode: no hunting. Every IntervalMs: one random skill key, the mouse
+      "Enabled": false,           // to a random spot near Point, right click. Potions keep working.
       "Point": { "X": 800, "Y": 450 },
-      "IntervalMs": 1000,
+      "JitterPx": 25,             // the mouse wanders this far around Point (a still cursor stops casts counting)
+      "IntervalMs": 200,
+      "Keys": [                   // the keys switch which skill the right button casts; picked at random by weight
+        { "Key": "F2", "Weight": 0.2 },
+        { "Key": "F3", "Weight": 0.4 },
+        { "Key": "F4", "Weight": 0.4 }
+      ],
+      "KeyHoldMs": 30,            // faster input than the hunt (Input.*) to fit a cycle in 200 ms
+      "ActionDelayMs": 20,
       "MinMpPercent": 0,          // hold the casts below this much mana (0 = always cast)
-      "LeftAttackEverySeconds": 120,  // every 2 min: find a monster in reach and hit it once with the left button
-      "LeftAttackRetrySeconds": 10    // (brings the earthquake damage back); none in reach -> try again after this
+      "LeftAttackEverySeconds": 0,    // > 0: every N s find a monster in reach and hit it once with the left button
+      "LeftAttackRetrySeconds": 10
     },
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,

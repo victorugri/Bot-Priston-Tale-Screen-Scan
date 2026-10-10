@@ -71,7 +71,7 @@ public sealed class BotSession : IDisposable
 
         var capture = BotFactory.CreateCaptureSource(window, config.Capture, log, options.Backend);
         var vision = BotFactory.CreateVision(config);
-        var input = BotFactory.CreateInput(window, config, log);
+        var input = BotFactory.CreateInput(window, config, log, config.Combat.Earthquake.Enabled ? EarthquakeInput(config) : null);
         var control = new BotControl();
         var hotkeys = new HotkeyMonitor(control,
             KeyChord.Parse(config.Hotkeys.PauseResume), KeyChord.Parse(config.Hotkeys.Quit), log);
@@ -98,7 +98,8 @@ public sealed class BotSession : IDisposable
             var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
                 input, capture, vision.Cursor, vision.TargetPanel, log);
             earthquake = new EarthquakeCaster(quake, input, TimeProvider.System, log, finder);
-            log.Information("Earthquake mode: right click at {Point} every {Interval} ms; {LeftAttack}", quake.Point, quake.IntervalMs,
+            log.Information("Earthquake mode: every {Interval} ms a key of [{Keys}] and a right click within {Jitter} px of {Point}; {LeftAttack}",
+                quake.IntervalMs, string.Join(", ", quake.Keys.Select(k => $"{k.Key} {k.Weight:0.##}")), quake.JitterPx, quake.Point,
                 quake.LeftAttackEverySeconds > 0 ? $"one left attack on a monster every {quake.LeftAttackEverySeconds}s" : "no left attack");
         }
 
@@ -122,6 +123,15 @@ public sealed class BotSession : IDisposable
         session._thread.Start();
         return session;
     }
+
+    /// <summary>Earthquake mode keeps a fast pace: its own hold and pause between actions.</summary>
+    private static InputConfig EarthquakeInput(BotConfig config) => new()
+    {
+        KeyHoldMs = config.Combat.Earthquake.KeyHoldMs,
+        ActionDelayMs = config.Combat.Earthquake.ActionDelayMs,
+        JitterMs = Math.Min(config.Input.JitterMs, 10),
+        MouseSettleMs = Math.Min(config.Input.MouseSettleMs, 20),
+    };
 
     private static Func<Action, CombatBrain>? CreateBrain(BotConfig config, IInputSink input,
         WindowCaptureSource capture, VisionPipeline vision, ILogger log)

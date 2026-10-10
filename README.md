@@ -103,9 +103,13 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 | **Attack** | Mantém o ataque até a barra de HP do alvo zerar. Usa a skill do botão direito sempre que ela fica pronta. |
 
 **Modo terremoto** (`Combat.Earthquake`, opção "Modo terremoto" na janela): para skill de área.
-- O bot não procura nem ataca mob. Ele só **clica com o botão direito no meio da tela (800, 450) a cada 1 s** (`IntervalMs`).
+- O bot não procura nem ataca mob. A **cada 0,2 s** (`IntervalMs`) ele faz um ciclo:
+  1. Aperta **F2, F3 ou F4** ao acaso (`Keys`, pesos 20% / 40% / 40%). Essas teclas trocam a skill do botão direito.
+  2. Leva o mouse a um ponto ao acaso **até 25 px do meio da tela** (`JitterPx`). Com o cursor parado, os ataques deixavam de contar.
+  3. Dá o **clique direito**.
+- Para caber em 0,2 s, esse modo usa tempos de input próprios: tecla segurada 30 ms e 20 ms entre ações (`KeyHoldMs`, `ActionDelayMs`).
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
-- **A cada 2 min** (`LeftAttackEverySeconds`), passa o mouse procurando um mob dentro do alcance do ataque e dá **um clique esquerdo** nele, depois volta ao terremoto. Isso é para quando os mobs colados no personagem param de tomar dano do terremoto (só "Block"/"Defense"). Se não houver mob no alcance, tenta de novo em 10 s.
+- Opcional, desligado: `LeftAttackEverySeconds` > 0 faz, a cada N s, a busca de um mob no alcance e dá **um clique esquerdo** nele.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.
 - O contador "Skill direita" da janela mostra quantos terremotos foram lançados.
 
@@ -218,7 +222,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 198 testes, todos sem precisar do jogo:
+São 200 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

@@ -141,12 +141,21 @@ public static class ConfigLoader
         if (combat.ReclickMs <= 0) errors.Add("Combat.ReclickMs must be positive.");
         if (combat.OutOfReachRetryMs < 0) errors.Add("Combat.OutOfReachRetryMs must be >= 0.");
         var quake = combat.Earthquake;
-        if (quake.IntervalMs < 100) errors.Add("Combat.Earthquake.IntervalMs must be >= 100.");
+        if (quake.IntervalMs < 50) errors.Add("Combat.Earthquake.IntervalMs must be >= 50.");
+        if (quake.JitterPx < 0) errors.Add("Combat.Earthquake.JitterPx must be >= 0.");
+        if (quake.KeyHoldMs < 10) errors.Add("Combat.Earthquake.KeyHoldMs must be >= 10 (the game may miss shorter presses).");
+        if (quake.ActionDelayMs < 0) errors.Add("Combat.Earthquake.ActionDelayMs must be >= 0.");
+        foreach (var key in quake.Keys)
+        {
+            CheckKey(key.Key, "Combat.Earthquake.Keys");
+            if (key.Weight <= 0) errors.Add($"Combat.Earthquake.Keys: weight of {key.Key} must be positive.");
+        }
         if (quake.MinMpPercent is < 0 or > 100) errors.Add("Combat.Earthquake.MinMpPercent must be 0-100.");
         if (quake.LeftAttackEverySeconds < 0 || quake.LeftAttackRetrySeconds < 1)
             errors.Add("Combat.Earthquake.LeftAttackEverySeconds must be >= 0 and LeftAttackRetrySeconds >= 1.");
-        if (!client.Contains(new PixelRect(quake.Point.X, quake.Point.Y, 1, 1)) || Targeting.SweepPattern.IsExcluded(quake.Point, targeting))
-            errors.Add("Combat.Earthquake.Point must be inside the client area and outside Targeting.Exclusions.");
+        var wander = new PixelRect(quake.Point.X - quake.JitterPx, quake.Point.Y - quake.JitterPx, 2 * quake.JitterPx + 1, 2 * quake.JitterPx + 1);
+        if (!client.Contains(wander) || targeting.Exclusions.Any(r => !r.Intersect(wander).IsEmpty))
+            errors.Add("Combat.Earthquake.Point ± JitterPx must be inside the client area and outside Targeting.Exclusions.");
         if (motion.AttackStepWatchMs < 0 || motion.AttackStepMinPx <= 0)
             errors.Add("Vision.Motion.AttackStepWatchMs must be >= 0 and AttackStepMinPx positive.");
         if (combat.NoProgressSeconds <= 0 || combat.MaxTargetSeconds <= 0)

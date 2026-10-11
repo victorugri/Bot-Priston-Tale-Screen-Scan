@@ -104,7 +104,7 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 
 **Modo terremoto** (`Combat.Earthquake`, opção "Modo terremoto" na janela): para skill de área.
 - O bot não procura nem ataca mob. A **cada 0,2 s** (`IntervalMs`) ele faz um ciclo:
-  1. Aperta **F2, F3 ou F4** ao acaso (`Keys`, pesos 20% / 40% / 40%). Essas teclas trocam a skill do botão direito.
+  1. Aperta **F2, F3 ou F4** ao acaso (`Keys`, pesos 5% / 45% / 50%). Essas teclas trocam a skill do botão direito.
   2. Leva o mouse a um ponto ao acaso **até 25 px do meio da tela** (`JitterPx`). Com o cursor parado, os ataques deixavam de contar.
   3. Dá o **clique direito**.
 - Para caber em 0,2 s, esse modo usa tempos de input próprios: tecla segurada 30 ms e 20 ms entre ações (`KeyHoldMs`, `ActionDelayMs`).

@@ -273,7 +273,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
                                     <CheckBox Content="Modo terremoto (F2/F3/F4 + botão direito no meio da tela)" IsChecked="{Binding Config.Combat.Earthquake.Enabled}"
-                                              ToolTip="Não procura mob: a cada intervalo aperta F2, F3 ou F4 ao acaso (pesos 20/40/40%), mexe o mouse de leve em volta do meio da tela e clica com o botão direito. Continua tomando e repondo poções." />
+                                              ToolTip="Não procura mob: a cada intervalo aperta F2, F3 ou F4 ao acaso (pesos 5/45/50%), mexe o mouse de leve em volta do meio da tela e clica com o botão direito. Continua tomando e repondo poções." />
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />

@@ -103,11 +103,11 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 | **Attack** | Mantém o ataque até a barra de HP do alvo zerar. Usa a skill do botão direito sempre que ela fica pronta. |
 
 **Modo terremoto** (`Combat.Earthquake`, opção "Modo terremoto" na janela): para skill de área.
-- O bot não procura nem ataca mob. A **cada 0,2 s** (`IntervalMs`) ele faz um ciclo:
+- O bot não procura nem ataca mob. A **cada 0,5 s** (`IntervalMs`) ele faz um ciclo:
   1. Aperta **F2, F3 ou F4** ao acaso (`Keys`, pesos 5% / 45% / 50%). Essas teclas trocam a skill do botão direito.
   2. Leva o mouse a um ponto ao acaso **até 25 px do meio da tela** (`JitterPx`). Com o cursor parado, os ataques deixavam de contar.
   3. Dá o **clique direito**.
-- Para caber em 0,2 s, esse modo usa tempos de input próprios: tecla segurada 30 ms e 20 ms entre ações (`KeyHoldMs`, `ActionDelayMs`).
+- Os tempos de tecla e clique são os mesmos do resto do bot (`Input`: 60 ms segurando, 120 ms entre ações), então um ciclo leva ~0,45 s.
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
 - Opcional, desligado: `LeftAttackEverySeconds` > 0 faz, a cada N s, a busca de um mob no alcance e dá **um clique esquerdo** nele.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.

@@ -62,17 +62,15 @@ public sealed class EarthquakeConfig
     /// <summary>The mouse goes to a random spot this far from <see cref="Point"/> at most, every cycle.</summary>
     public int JitterPx { get; set; } = 25;
 
-    /// <summary>Time between two cycles (key + right click).</summary>
-    public int IntervalMs { get; set; } = 200;
+    /// <summary>
+    /// Time between two cycles (key + mouse + right click). With the normal input timing (Input.*) a cycle
+    /// itself takes ~0.45 s, so shorter intervals just mean "as fast as possible".
+    /// </summary>
+    public int IntervalMs { get; set; } = 500;
 
     /// <summary>Skill keys pressed before each right click, one per cycle, picked at random by weight. Empty = none.</summary>
     public List<WeightedKey> Keys { get; set; } = [];
 
-    /// <summary>How long keys and the right button are held in this mode (shorter than Input.KeyHoldMs, to keep the pace).</summary>
-    public int KeyHoldMs { get; set; } = 30;
-
-    /// <summary>Minimum pause between two actions in this mode (replaces Input.ActionDelayMs).</summary>
-    public int ActionDelayMs { get; set; } = 20;
 
     /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
     public double MinMpPercent { get; set; }

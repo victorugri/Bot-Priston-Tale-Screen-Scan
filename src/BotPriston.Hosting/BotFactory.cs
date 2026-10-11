@@ -23,15 +23,14 @@ public static class BotFactory
 
     public static VisionPipeline CreateVision(BotConfig config) => new(config.Vision);
 
-    /// <param name="timing">Overrides <see cref="BotConfig.Input"/> (e.g. the faster earthquake mode).</param>
-    public static IInputSink CreateInput(GameWindow window, BotConfig config, ILogger log, InputConfig? timing = null)
+    public static IInputSink CreateInput(GameWindow window, BotConfig config, ILogger log)
     {
         if (config.Safety.DryRun)
         {
             log.Warning("DRY-RUN: decisions are logged, no input is sent");
             return new DryRunInputSink(log);
         }
-        return new SendInputSink(window, timing ?? config.Input, log);
+        return new SendInputSink(window, config.Input, log);
     }
 
     public static void WarnIfInputBlocked(GameWindow window, ILogger log)

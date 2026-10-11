@@ -143,8 +143,6 @@ public static class ConfigLoader
         var quake = combat.Earthquake;
         if (quake.IntervalMs < 50) errors.Add("Combat.Earthquake.IntervalMs must be >= 50.");
         if (quake.JitterPx < 0) errors.Add("Combat.Earthquake.JitterPx must be >= 0.");
-        if (quake.KeyHoldMs < 10) errors.Add("Combat.Earthquake.KeyHoldMs must be >= 10 (the game may miss shorter presses).");
-        if (quake.ActionDelayMs < 0) errors.Add("Combat.Earthquake.ActionDelayMs must be >= 0.");
         foreach (var key in quake.Keys)
         {
             CheckKey(key.Key, "Combat.Earthquake.Keys");

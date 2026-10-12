@@ -272,8 +272,8 @@
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
-                                    <CheckBox Content="Modo meteoro (botão direito no meio da tela + escudo)" IsChecked="{Binding Config.Combat.Meteor.Enabled}"
-                                              ToolTip="Não procura mob: clica com o botão direito perto do meio da tela a cada intervalo (meteoro). De tempos em tempos troca para o escudo (F2), clica e volta ao meteoro (F4). Continua tomando e repondo poções." />
+                                    <CheckBox Content="Modo meteoro (botão direito no mob + escudo)" IsChecked="{Binding Config.Combat.Meteor.Enabled}"
+                                              ToolTip="A cada intervalo clica com o botão direito num mob (pedra do cursor vermelha), procurando dentro do alcance do ataque se precisar. De tempos em tempos troca para o escudo (F2), clica no meio da tela e volta ao meteoro (F4). Continua tomando e repondo poções." />
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -288,8 +288,8 @@
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Combat.Meteor.ShieldEverySeconds}" />
                                         <TextBlock Grid.Row="2" Text="Mana mínima p/ lançar (%)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Config.Combat.Meteor.MinMpPercent}" />
-                                        <TextBlock Grid.Row="3" Text="Mexer o mouse até (px do meio)" Style="{StaticResource Label}" />
-                                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Combat.Meteor.JitterPx}" />
+                                        <TextBlock Grid.Row="3" Text="Sem mob no alcance: procurar de novo em (ms)" Style="{StaticResource Label}" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Combat.Meteor.SearchRetryMs}" />
                                     </Grid>
                                     <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
                                     <CheckBox Content="ATK contínuo ligado no jogo (clica 1 vez no mob)" IsChecked="{Binding Config.Combat.AutoAttack}"

@@ -1,15 +1,23 @@
 using BotPriston.Core.Bot;
 using BotPriston.Core.Config;
 using BotPriston.Core.Geometry;
+using BotPriston.Core.Vision;
 using Microsoft.Extensions.Time.Testing;
+using OpenCvSharp;
 
 namespace BotPriston.Tests;
 
-public class MeteorTests
+public class MeteorTests : IDisposable
 {
+    private static readonly PixelPoint Monster = new(875, 465);
+    private const string ShieldClick = "move (800,450)";
+
     private readonly FakeTimeProvider _time = new();
     private readonly FakeInput _input = new();
     private readonly FakeVision _vision = new();
+    private readonly ScriptedFinder _finder = new();
+    private readonly FakeCursor _cursor = new() { Kind = CursorKind.Neutral };
+    private readonly Mat _frame = new(4, 4, MatType.CV_8UC3, Scalar.All(0));
     private readonly BotConfig _config = new()
     {
         Potions = new PotionsConfig
@@ -20,127 +28,157 @@ public class MeteorTests
         },
         Combat = new CombatConfig
         {
-            // A still mouse keeps the expected actions simple; the wandering has its own test.
             Meteor = new MeteorConfig
             {
-                Enabled = true, Point = new PixelPoint(800, 450), JitterPx = 0,
-                IntervalMs = 2000, MeteorKey = "F4", ShieldKey = "F2", ShieldEverySeconds = 90,
+                Enabled = true, Point = new PixelPoint(800, 450), JitterPx = 0, IntervalMs = 2000, SearchRetryMs = 500,
+                MeteorKey = "F4", ShieldKey = "F2", ShieldEverySeconds = 90,
             },
         },
     };
 
-    private BotRunner Runner(out MeteorCaster caster)
+    private MeteorCaster Caster() =>
+        new(_config.Combat.Meteor, _input, _time, TestLog.Silent, _finder, _cursor);
+
+    private void Tick(MeteorCaster caster) => caster.Tick(FakeVision.Bars(100, 100, 100), _frame, CancellationToken.None);
+
+    /// <summary>The first tick casts the shield; the clock then moves to the first meteor.</summary>
+    private MeteorCaster AfterShield()
     {
-        caster = new MeteorCaster(_config.Combat.Meteor, _input, _time, TestLog.Silent);
-        return new BotRunner(_config, new FakeCapture(), _vision, _input, new FakeWindow(), new BotControl(), _time,
-            TestLog.Silent, meteor: caster);
+        var caster = Caster();
+        Tick(caster);
+        _time.Advance(TimeSpan.FromMilliseconds(2000));
+        _input.Actions.Clear();
+        return caster;
     }
 
-    private const string Click = "move (800,450)";
+    [Fact]
+    public void Starts_WithTheShield_InTheMiddle()
+    {
+        var caster = Caster();
+
+        Tick(caster);
+
+        Assert.Equal(["key F2", ShieldClick, "click Right", "key F4"], _input.Actions);
+        Assert.Equal(1, caster.Shields);
+        Assert.Empty(_finder.Calls);
+    }
 
     [Fact]
-    public void Starts_WithTheShield_ThenAMeteorEveryTwoSeconds()
+    public void Meteor_SearchesAMonster_ThenRightClicksIt()
     {
-        var runner = Runner(out var caster);
+        var caster = AfterShield();
+        _finder.WillFind(Monster);
 
-        runner.Tick();                                         // shield first
-        _time.Advance(TimeSpan.FromMilliseconds(1000));
-        runner.Tick();                                         // too early
-        _time.Advance(TimeSpan.FromMilliseconds(1000));
-        runner.Tick();                                         // meteor
+        Tick(caster);
+
+        Assert.Single(_finder.Calls);
+        Assert.Equal(["click Right"], _input.Actions); // the finder left the mouse on the monster, gem red
+        Assert.Equal(1, caster.Casts);
+    }
+
+    [Fact]
+    public void Meteor_SameMonsterStillUnderTheCursor_NoNewSearch()
+    {
+        var caster = AfterShield();
+        _finder.WillFind(Monster);
+        Tick(caster);
+
+        _cursor.Kind = CursorKind.Enemy;                // still red on that spot
         _time.Advance(TimeSpan.FromMilliseconds(2000));
-        runner.Tick();                                         // meteor
+        Tick(caster);
 
-        Assert.Equal(
-            ["key F2", Click, "click Right", "key F4",
-             Click, "click Right",
-             Click, "click Right"],
-            _input.Actions);
-        Assert.Equal((1, 2), (caster.Shields, caster.Casts));
+        Assert.Single(_finder.Calls);
+        Assert.Equal(["click Right", "move (875,465)", "click Right"], _input.Actions);
+    }
+
+    [Fact]
+    public void Meteor_MonsterGone_SearchesAgain()
+    {
+        var caster = AfterShield();
+        _finder.WillFind(Monster);
+        Tick(caster);
+
+        _cursor.Kind = CursorKind.Neutral;              // it died or moved
+        _finder.WillFind(new PixelPoint(740, 465));
+        _time.Advance(TimeSpan.FromMilliseconds(2000));
+        Tick(caster);
+
+        Assert.Equal(2, _finder.Calls.Count);
+        Assert.Equal(2, caster.Casts);
+    }
+
+    [Fact]
+    public void NoMonsterInReach_NoRightClick_SearchesAgainSoon()
+    {
+        var caster = AfterShield();
+
+        Tick(caster);                                   // finds nothing
+        _time.Advance(TimeSpan.FromMilliseconds(499));
+        Tick(caster);
+        Assert.Single(_finder.Calls);                   // not yet
+
+        _time.Advance(TimeSpan.FromMilliseconds(1));
+        Tick(caster);
+
+        Assert.Equal(2, _finder.Calls.Count);
+        Assert.Empty(_input.Actions);                   // never clicked without a red gem
+        Assert.Equal(0, caster.Casts);
     }
 
     [Fact]
     public void EveryMinuteAndAHalf_SwitchesToTheShield_AndBack()
     {
-        _config.Safety.WatchdogSeconds = 600;
-        var runner = Runner(out var caster);
+        var caster = Caster();
+        _cursor.Kind = CursorKind.Enemy;
+        for (int i = 0; i < 3; i++)
+            _finder.WillFind(Monster);                  // found again after each shield
 
-        for (int i = 0; i <= 100; i++)                         // 200 s, one tick every 2 s
+        for (int i = 0; i <= 100; i++)                  // 200 s, one tick every 2 s
         {
-            runner.Tick();
+            Tick(caster);
             _time.Advance(TimeSpan.FromSeconds(2));
         }
 
-        Assert.Equal(3, caster.Shields);                       // at 0 s, 90 s and 180 s
-        Assert.Equal(caster.Shields, _input.Actions.Count(a => a == "key F2"));
-        Assert.Equal(caster.Shields, _input.Actions.Count(a => a == "key F4"));
-        // Every shield is followed by its right click and then the meteor key.
+        Assert.Equal(3, caster.Shields);                // at 0 s, 90 s and 180 s
         for (int i = 0; i < _input.Actions.Count; i++)
         {
             if (_input.Actions[i] != "key F2") continue;
-            Assert.Equal([Click, "click Right", "key F4"], _input.Actions.Skip(i + 1).Take(3));
+            Assert.Equal([ShieldClick, "click Right", "key F4"], _input.Actions.Skip(i + 1).Take(3));
         }
-        Assert.Equal(98, caster.Casts);                        // 101 ticks, 3 of them for the shield
+        Assert.Equal(3, _finder.Calls.Count);           // after each shield the mouse left the monster
+        Assert.Equal(98, caster.Casts);
     }
 
     [Fact]
-    public void TheMouseMovesSlightly_AroundTheMiddle()
+    public void Runner_PotionComesFirst_AndNoTargetsIsNotAStall()
     {
-        var meteor = _config.Combat.Meteor;
-        meteor.JitterPx = 25;
-        var caster = new MeteorCaster(meteor, _input, _time, TestLog.Silent, new Random(3));
-
-        for (int i = 0; i < 200; i++)
-        {
-            caster.Tick(FakeVision.Bars(100, 100, 100), CancellationToken.None);
-            _time.Advance(TimeSpan.FromMilliseconds(meteor.IntervalMs));
-        }
-
-        var spots = _input.Actions.Where(a => a.StartsWith("move ")).Distinct().ToList();
-        Assert.True(spots.Count > 50, "the cursor keeps moving");
-        foreach (var spot in spots)
-        {
-            var xy = spot[6..^1].Split(',').Select(int.Parse).ToArray();
-            Assert.True(Math.Sqrt(Math.Pow(xy[0] - 800, 2) + Math.Pow(xy[1] - 450, 2)) <= 25.5, spot);
-        }
-    }
-
-    [Fact]
-    public void PotionComesFirst()
-    {
-        var runner = Runner(out var caster);
+        var caster = Caster();
+        var runner = new BotRunner(_config, new FakeCapture(), _vision, _input, new FakeWindow(), new BotControl(), _time,
+            TestLog.Silent, meteor: caster);
         _vision.Next = FakeVision.Snapshot(hp: 40, mp: 100, stm: 100);
 
         runner.Tick();
-
         Assert.Equal(["key 2"], _input.Actions);
-        Assert.Equal(0, caster.Casts + caster.Shields);
+
+        _vision.Next = FakeVision.Snapshot(hp: 100, mp: 100, stm: 100);
+        for (int i = 0; i < 200; i++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(1));
+            runner.Tick();
+        }
+        Assert.Equal(RunnerState.Running, runner.State);
     }
 
     [Fact]
     public void LowMana_HoldsTheCasts()
     {
         _config.Combat.Meteor.MinMpPercent = 40;
-        _config.Potions.Mp.Enabled = false;
-        var runner = Runner(out var caster);
-        _vision.Next = FakeVision.Snapshot(hp: 100, mp: 35, stm: 100);
+        var caster = Caster();
 
-        runner.Tick();
+        caster.Tick(FakeVision.Bars(100, 35, 100), _frame, CancellationToken.None);
 
         Assert.Empty(_input.Actions);
     }
 
-    [Fact]
-    public void NoTargets_IsNotAStall()
-    {
-        var runner = Runner(out _);
-
-        for (int i = 0; i < 200; i++)
-        {
-            _time.Advance(TimeSpan.FromSeconds(1));
-            runner.Tick();
-        }
-
-        Assert.Equal(RunnerState.Running, runner.State);
-    }
+    public void Dispose() => _frame.Dispose();
 }

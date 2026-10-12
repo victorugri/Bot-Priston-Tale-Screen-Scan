@@ -220,11 +220,12 @@
     "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
     "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
     "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
-    "Meteor": {                   // meteor mode: no hunting. A right click near the middle of the screen every
-      "Enabled": false,           // IntervalMs casts the meteor; every ShieldEverySeconds (and first thing):
-      "Point": { "X": 800, "Y": 450 },   // ShieldKey, right click, MeteorKey. Potions keep working.
-      "JitterPx": 25,             // each click lands up to this far from Point (the cursor never sits still)
+    "Meteor": {                   // meteor mode: every IntervalMs a right click on a monster (gem red; hover
+      "Enabled": false,           // search within Targeting reach first if needed). Every ShieldEverySeconds
+      "Point": { "X": 800, "Y": 450 },   // (and first thing): ShieldKey, right click near Point, MeteorKey.
+      "JitterPx": 25,             // the shield click lands up to this far from Point
       "IntervalMs": 2000,
+      "SearchRetryMs": 500,       // no monster in reach: search again after this
       "MeteorKey": "F4",
       "ShieldKey": "F2",
       "ShieldEverySeconds": 90,

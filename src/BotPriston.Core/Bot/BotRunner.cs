@@ -218,7 +218,7 @@ public sealed class BotRunner
         if (_meteor is not null)
         {
             // No targets to track: alive with the HUD up and casting counts as progress.
-            _meteor.Tick(snapshot.Bars, interrupt.Token);
+            _meteor.Tick(snapshot.Bars, image, interrupt.Token);
             _progressWatchdog.Kick();
             return;
         }

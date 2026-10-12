@@ -143,6 +143,7 @@ public static class ConfigLoader
         var meteor = combat.Meteor;
         if (meteor.IntervalMs < 100) errors.Add("Combat.Meteor.IntervalMs must be >= 100.");
         if (meteor.ShieldEverySeconds < 1) errors.Add("Combat.Meteor.ShieldEverySeconds must be >= 1.");
+        if (meteor.SearchRetryMs < 0) errors.Add("Combat.Meteor.SearchRetryMs must be >= 0.");
         if (meteor.JitterPx < 0) errors.Add("Combat.Meteor.JitterPx must be >= 0.");
         if (meteor.MinMpPercent is < 0 or > 100) errors.Add("Combat.Meteor.MinMpPercent must be 0-100.");
         CheckKey(meteor.MeteorKey, "Combat.Meteor.MeteorKey");

@@ -47,23 +47,27 @@ public sealed class CombatConfig
 }
 
 /// <summary>
-/// Meteor mode: the meteor is an area skill cast with a right click near the middle of the screen, so
-/// there is nothing to look for. The bot right-clicks every <see cref="IntervalMs"/>; every
-/// <see cref="ShieldEverySeconds"/> it switches to the shield (key), right-clicks to cast it and switches
-/// back to the meteor. Potions keep working. Replaces the hunt (search, attack, right skill) while enabled.
+/// Meteor mode: the meteor is cast with a right click on a monster (cursor gem red). Every
+/// <see cref="IntervalMs"/> the bot right-clicks the monster under the cursor, or hover-searches one within
+/// attack reach (Targeting) first; every <see cref="ShieldEverySeconds"/> it switches to the shield (key),
+/// right-clicks near the middle of the screen to cast it and switches back to the meteor. Potions keep
+/// working. Replaces the hunt (attack, right skill) while enabled.
 /// </summary>
 public sealed class MeteorConfig
 {
     public bool Enabled { get; set; }
 
-    /// <summary>Middle of the area where the mouse clicks (the character).</summary>
+    /// <summary>Where the shield is cast: the middle of the screen (the character).</summary>
     public PixelPoint Point { get; set; } = new(800, 450);
 
-    /// <summary>Each click goes to a random spot this far from <see cref="Point"/> at most (0 = always the same spot).</summary>
+    /// <summary>The shield click goes to a random spot this far from <see cref="Point"/> at most (0 = always the same spot).</summary>
     public int JitterPx { get; set; } = 25;
 
     /// <summary>Time between two meteor casts.</summary>
     public int IntervalMs { get; set; } = 2000;
+
+    /// <summary>When no monster is in reach, search again after this long.</summary>
+    public int SearchRetryMs { get; set; } = 500;
 
     /// <summary>Selects the meteor on the right button.</summary>
     public string MeteorKey { get; set; } = "F4";

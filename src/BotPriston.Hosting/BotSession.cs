@@ -95,9 +95,11 @@ public sealed class BotSession : IDisposable
         MeteorCaster? meteor = null;
         if (meteorConfig.Enabled)
         {
-            meteor = new MeteorCaster(meteorConfig, input, TimeProvider.System, log);
-            log.Information("Meteor mode: right click within {Jitter} px of {Point} every {Interval} ms; shield ({Shield}) every {ShieldEvery}s, then back to {Meteor}",
-                meteorConfig.JitterPx, meteorConfig.Point, meteorConfig.IntervalMs, meteorConfig.ShieldKey, meteorConfig.ShieldEverySeconds, meteorConfig.MeteorKey);
+            var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
+                input, capture, vision.Cursor, vision.TargetPanel, log);
+            meteor = new MeteorCaster(meteorConfig, input, TimeProvider.System, log, finder, vision.Cursor);
+            log.Information("Meteor mode: right click on a monster in reach every {Interval} ms ({Points} search points); shield ({Shield}) every {ShieldEvery}s, then back to {Meteor}",
+                meteorConfig.IntervalMs, finder.Points.Count, meteorConfig.ShieldKey, meteorConfig.ShieldEverySeconds, meteorConfig.MeteorKey);
         }
 
         var runner = new BotRunner(config, capture, vision, input, window, control, TimeProvider.System, log,

@@ -103,8 +103,11 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 | **Attack** | Mantém o ataque até a barra de HP do alvo zerar. Usa a skill do botão direito sempre que ela fica pronta. |
 
 **Modo meteoro** (`Combat.Meteor`, opção "Modo meteoro" na janela): para o meteoro, skill de área do botão direito.
-- O bot não procura nem ataca mob. **A cada 2 s** (`IntervalMs`) ele dá um **clique direito perto do meio da tela**, num ponto ao acaso até 25 px do centro (`JitterPx`), para o cursor nunca ficar parado.
-- **A cada 1 min e meio** (`ShieldEverySeconds`, e logo ao começar): aperta **F2** (escudo), dá o clique direito para lançá-lo e aperta **F4** para voltar ao meteoro (`ShieldKey`, `MeteorKey`).
+- O meteoro só sai com um mob embaixo do cursor. **A cada 2 s** (`IntervalMs`) o bot dá um **clique direito no mob**:
+  - Se o cursor ainda está sobre o mob anterior (pedra vermelha), clica ali mesmo.
+  - Senão, faz a busca normal: só passa o mouse, **dentro do alcance do ataque** para não andar, e clica quando a pedra fica vermelha.
+  - Sem mob no alcance, procura de novo em 0,5 s (`SearchRetryMs`).
+- **A cada 1 min e meio** (`ShieldEverySeconds`, e logo ao começar): aperta **F2** (escudo), dá o clique direito perto do meio da tela para lançá-lo e aperta **F4** para voltar ao meteoro (`ShieldKey`, `MeteorKey`).
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.
 - O contador "Skill direita" da janela mostra quantos meteoros foram lançados.
@@ -218,7 +221,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 198 testes, todos sem precisar do jogo:
+São 200 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

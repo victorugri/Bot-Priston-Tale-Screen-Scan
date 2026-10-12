@@ -107,6 +107,7 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
   - Se o cursor ainda está sobre o mob anterior (pedra vermelha), clica ali mesmo.
   - Senão, faz a busca normal: só passa o mouse, **dentro do alcance do ataque** para não andar, e clica quando a pedra fica vermelha.
   - Sem mob no alcance, procura de novo em 0,5 s (`SearchRetryMs`).
+  - **Enquanto o meteoro recarrega**, o bot já procura o próximo mob e deixa o cursor em cima dele. Quando o tempo acaba, o clique sai na hora.
 - **A cada 1 min e meio** (`ShieldEverySeconds`, e logo ao começar): aperta **F2** (escudo), dá o clique direito perto do meio da tela para lançá-lo e aperta **F4** para voltar ao meteoro (`ShieldKey`, `MeteorKey`).
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.
@@ -221,7 +222,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 201 testes, todos sem precisar do jogo:
+São 202 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

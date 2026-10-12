@@ -73,7 +73,7 @@ public class MeteorTests : IDisposable
         Tick(caster);
 
         Assert.Single(_finder.Calls);
-        Assert.Equal(["click Right"], _input.Actions); // the finder left the mouse on the monster, gem red
+        Assert.Equal(["move (875,465)", "click Right"], _input.Actions); // where the finder saw the gem red
         Assert.Equal(1, caster.Casts);
     }
 
@@ -89,7 +89,7 @@ public class MeteorTests : IDisposable
         Tick(caster);
 
         Assert.Single(_finder.Calls);
-        Assert.Equal(["click Right", "move (875,465)", "click Right"], _input.Actions);
+        Assert.Equal(["move (875,465)", "click Right", "move (875,465)", "click Right"], _input.Actions);
     }
 
     [Fact]
@@ -106,6 +106,32 @@ public class MeteorTests : IDisposable
 
         Assert.Equal(2, _finder.Calls.Count);
         Assert.Equal(2, caster.Casts);
+    }
+
+    [Fact]
+    public void WhileRecharging_FindsTheNextMonster_ThenClicksAsSoonAsReady()
+    {
+        var caster = AfterShield();
+        _finder.WillFind(Monster);
+        Tick(caster);                                   // meteor #1
+        Assert.Equal(1, caster.Casts);
+
+        _cursor.Kind = CursorKind.Neutral;              // that monster died
+        var next = new PixelPoint(740, 465);
+        _finder.WillFind(next);
+        _time.Advance(TimeSpan.FromMilliseconds(300));
+        Tick(caster);                                   // still recharging: aims at the next one, no click
+        Assert.Equal(2, _finder.Calls.Count);
+        Assert.Equal(1, caster.Casts);
+        Assert.Equal(next, caster.Aim);
+
+        _cursor.Kind = CursorKind.Enemy;                // still there when the meteor is ready
+        _time.Advance(TimeSpan.FromMilliseconds(1700));
+        Tick(caster);
+
+        Assert.Equal(2, _finder.Calls.Count);           // no search at cast time
+        Assert.Equal(2, caster.Casts);
+        Assert.Equal(["move (740,465)", "click Right"], _input.Actions.TakeLast(2));
     }
 
     [Fact]

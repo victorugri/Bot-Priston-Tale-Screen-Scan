@@ -12,7 +12,8 @@ namespace BotPriston.Core.Bot;
 /// Meteor mode (<see cref="MeteorConfig"/>). Every 2-3 s (random, <see cref="MeteorConfig.IntervalMs"/> to
 /// <see cref="MeteorConfig.IntervalMaxMs"/>) a right click on a
 /// monster casts the meteor: on the same spot while the cursor gem is still red there, otherwise after a
-/// hover sweep (no click) finds one within attack reach. A right click is never sent with the gem not red.
+/// hover sweep (no click) finds one within attack reach. The search also runs while the meteor recharges,
+/// so the cursor is already on a monster when it is ready. A right click is never sent with the gem not red.
 /// Every <see cref="MeteorConfig.ShieldEverySeconds"/> (and first thing): the shield key, a right click near
 /// the middle of the screen to cast it, and the meteor key again.
 /// </summary>
@@ -28,6 +29,7 @@ public sealed class MeteorCaster
     private readonly KeyChord _meteorKey, _shieldKey;
     private DateTimeOffset _nextCast = DateTimeOffset.MinValue;
     private DateTimeOffset _nextShield = DateTimeOffset.MinValue; // the shield goes up first
+    private DateTimeOffset _nextSearch = DateTimeOffset.MinValue;
     private PixelPoint? _aim;
     private bool _lowMpLogged, _noMonsterLogged;
 
@@ -52,35 +54,34 @@ public sealed class MeteorCaster
     /// <summary>Shield casts (key + right click + back to the meteor).</summary>
     public int Shields { get; private set; }
 
+    /// <summary>Where the cursor is kept: the monster the next meteor goes to.</summary>
+    public PixelPoint? Aim => _aim;
+
     /// <summary>Searches that found no monster in reach.</summary>
     public int EmptySearches { get; private set; }
 
     public string Summary => $"meteor cast {Casts}x, shield {Shields}x, searches without a monster in reach {EmptySearches}x";
 
-    /// <param name="frame">This tick's screenshot: tells whether the cursor is still on the last monster.</param>
+    /// <param name="frame">This tick's screenshot: tells whether the cursor is still on a monster.</param>
     public void Tick(PlayerBars bars, Mat frame, CancellationToken cancel)
     {
         var now = _time.GetUtcNow();
-        if (now < _nextCast && now < _nextShield) return;
-
-        if (bars.Mp.Percent < _config.MinMpPercent)
-        {
-            if (!_lowMpLogged)
-                _log.Information("Meteor on hold: MP {Mp:F0}% < {Min}%", bars.Mp.Percent, _config.MinMpPercent);
-            _lowMpLogged = true;
-            return;
-        }
-        _lowMpLogged = false;
+        bool lowMp = bars.Mp.Percent < _config.MinMpPercent;
+        if (lowMp != _lowMpLogged)
+            _log.Information(lowMp ? "Meteor on hold: MP {Mp:F0}% < {Min}%" : "Meteor resumed: MP {Mp:F0}%", bars.Mp.Percent, _config.MinMpPercent);
+        _lowMpLogged = lowMp;
 
         if (now >= _nextShield)
         {
-            CastShield(now);
+            if (!lowMp) CastShield(now);
             return;
         }
 
+        // Keep the cursor on a monster all the time, also while the meteor recharges: when it is ready,
+        // the right click goes out at once. Hover only; a right click on the ground would walk.
         if (_aim is not { } aim || _cursor.Detect(frame, aim).Kind != CursorKind.Enemy)
         {
-            // Hover only: the right click comes once the gem is red (on the ground it would walk).
+            if (now < _nextSearch) return;
             _input.ForceReleaseButtons();
             var result = _finder.Find(cancel);
             if (result.Outcome == FindOutcome.Aborted) return; // paused / focus lost: the runner takes over
@@ -88,7 +89,7 @@ public sealed class MeteorCaster
             {
                 _aim = null;
                 EmptySearches++;
-                _nextCast = now + TimeSpan.FromMilliseconds(_config.SearchRetryMs);
+                _nextSearch = _time.GetUtcNow() + TimeSpan.FromMilliseconds(_config.SearchRetryMs);
                 if (!_noMonsterLogged)
                     _log.Information("Meteor: no monster in reach, searching again every {Ms} ms", _config.SearchRetryMs);
                 _noMonsterLogged = true;
@@ -97,14 +98,13 @@ public sealed class MeteorCaster
             _noMonsterLogged = false;
             aim = result.Target!.Point; // the finder leaves the mouse on it, gem confirmed red
             _aim = aim;
-        }
-        else if (!_input.MoveMouse(aim))
-        {
-            return;
+            now = _time.GetUtcNow();    // the search took a while
         }
 
+        if (now < _nextCast || lowMp) return; // aimed, waiting for the meteor to recharge
+
         _nextCast = now + NextInterval();
-        if (!_input.Click(MouseButton.Right)) return; // refused (game not focused): the runner pauses
+        if (!_input.MoveMouse(aim) || !_input.Click(MouseButton.Right)) return; // refused: the runner pauses
         Casts++;
         if (Casts == 1 || Casts % 100 == 0)
             _log.Information("Meteor cast #{Casts} on the monster at {Point} ({Summary})", Casts, aim, Summary);

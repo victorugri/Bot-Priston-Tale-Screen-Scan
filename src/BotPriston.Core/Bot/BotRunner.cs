@@ -43,7 +43,7 @@ public sealed class BotRunner
     private readonly ILogger _log;
     private readonly CombatBrain? _brain;
     private readonly PotionRestocker? _restocker;
-    private readonly EarthquakeCaster? _earthquake;
+    private readonly MeteorCaster? _meteor;
     private CancellationToken _runCancel = CancellationToken.None;
     private DateTimeOffset? _hpEmptySince;
     private readonly MotionDetector? _motion;
@@ -66,7 +66,7 @@ public sealed class BotRunner
     /// </param>
     public BotRunner(BotConfig config, ICaptureSource capture, IVision vision, IInputSink input,
         IGameWindowState window, BotControl control, TimeProvider time, ILogger log,
-        Func<Action, CombatBrain>? brainFactory = null, PotionRestocker? restocker = null, EarthquakeCaster? earthquake = null)
+        Func<Action, CombatBrain>? brainFactory = null, PotionRestocker? restocker = null, MeteorCaster? meteor = null)
     {
         _config = config;
         _capture = capture;
@@ -81,7 +81,7 @@ public sealed class BotRunner
         _hudWatchdog = new Watchdog(TimeSpan.FromSeconds(config.Safety.HudLostStopSeconds), time);
         _brain = brainFactory?.Invoke(_progressWatchdog.Kick);
         _restocker = restocker;
-        _earthquake = earthquake;
+        _meteor = meteor;
         if (_brain is not null)
             _brain.PotionAvailable = _potions.IsAvailable;
         if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0)
@@ -96,7 +96,7 @@ public sealed class BotRunner
 
     public CombatBrain? Brain => _brain;
     public PotionRestocker? Restocker => _restocker;
-    public EarthquakeCaster? Earthquake => _earthquake;
+    public MeteorCaster? Meteor => _meteor;
 
     /// <summary>Called at the end of every tick that saw the game (frame + what was perceived), e.g. to record a session.</summary>
     public Action<Mat, VisionSnapshot>? AfterTick { get; set; }
@@ -135,8 +135,8 @@ public sealed class BotRunner
                 _log.Information("Session: {Summary}", _brain.Summary);
             if (_restocker is not null)
                 _log.Information("Session: {Summary}", _restocker.Summary);
-            if (_earthquake is not null)
-                _log.Information("Session: {Summary}", _earthquake.Summary);
+            if (_meteor is not null)
+                _log.Information("Session: {Summary}", _meteor.Summary);
             if (_motion is not null && _brain is not null)
                 _log.Information("Session: {Steps} of {Attacks} attack clicks made the character step towards the monster",
                     AttackSteps, _brain.Engagements);
@@ -215,10 +215,10 @@ public sealed class BotRunner
         if (Restock(image, snapshot, interrupt.Token))
             return;
 
-        if (_earthquake is not null)
+        if (_meteor is not null)
         {
             // No targets to track: alive with the HUD up and casting counts as progress.
-            _earthquake.Tick(snapshot.Bars, interrupt.Token);
+            _meteor.Tick(snapshot.Bars, interrupt.Token);
             _progressWatchdog.Kick();
             return;
         }

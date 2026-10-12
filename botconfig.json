@@ -220,19 +220,15 @@
     "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
     "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
     "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
-    "Earthquake": {               // earthquake mode: no hunting. Every IntervalMs: one random skill key, the mouse
-      "Enabled": false,           // to a random spot near Point, right click. Potions keep working.
-      "Point": { "X": 800, "Y": 450 },
-      "JitterPx": 25,             // the mouse wanders this far around Point (a still cursor stops casts counting)
-      "IntervalMs": 500,          // a cycle itself takes ~0.45 s with the Input timing above
-      "Keys": [                   // the keys switch which skill the right button casts; picked at random by weight
-        { "Key": "F2", "Weight": 0.05 },
-        { "Key": "F3", "Weight": 0.45 },
-        { "Key": "F4", "Weight": 0.5 }
-      ],
-      "MinMpPercent": 0,          // hold the casts below this much mana (0 = always cast)
-      "LeftAttackEverySeconds": 0,    // > 0: every N s find a monster in reach and hit it once with the left button
-      "LeftAttackRetrySeconds": 10
+    "Meteor": {                   // meteor mode: no hunting. A right click near the middle of the screen every
+      "Enabled": false,           // IntervalMs casts the meteor; every ShieldEverySeconds (and first thing):
+      "Point": { "X": 800, "Y": 450 },   // ShieldKey, right click, MeteorKey. Potions keep working.
+      "JitterPx": 25,             // each click lands up to this far from Point (the cursor never sits still)
+      "IntervalMs": 2000,
+      "MeteorKey": "F4",
+      "ShieldKey": "F2",
+      "ShieldEverySeconds": 90,
+      "MinMpPercent": 0           // hold the casts below this much mana (0 = always cast)
     },
     "RightSkill": {               // right-click skill on the target whenever its icon is in color
       "Enabled": true,

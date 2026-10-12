@@ -225,7 +225,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 _ => "Parando...",
             };
             ActivityText = runner.Restocker?.Busy == true ? "Pegando poções do inventário"
-                : runner.Earthquake is not null ? (runner.State == RunnerState.Running ? "Terremoto" : "")
+                : runner.Meteor is not null ? (runner.State == RunnerState.Running ? "Meteoro" : "")
                 : runner.Brain?.State switch
             {
                 BrainState.Recover => runner.State == RunnerState.Running ? "Recuperando" : "",
@@ -242,8 +242,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 WalkStops = brain.WalkStops;
                 DistantAttackers = brain.WideTargets;
             }
-            if (runner.Earthquake is { } quake)
-                RightSkillCasts = quake.Casts;
+            if (runner.Meteor is { } meteor)
+                RightSkillCasts = meteor.Casts;
             if (runner.LastSnapshot?.Bars is { } bars)
             {
                 Hp = bars.Hp.Percent;

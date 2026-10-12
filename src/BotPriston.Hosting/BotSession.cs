@@ -91,20 +91,17 @@ public sealed class BotSession : IDisposable
                 restock.InventoryKey, restock.PageKey, restock.BelowCount);
         }
 
-        var quake = config.Combat.Earthquake;
-        EarthquakeCaster? earthquake = null;
-        if (quake.Enabled)
+        var meteorConfig = config.Combat.Meteor;
+        MeteorCaster? meteor = null;
+        if (meteorConfig.Enabled)
         {
-            var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
-                input, capture, vision.Cursor, vision.TargetPanel, log);
-            earthquake = new EarthquakeCaster(quake, input, TimeProvider.System, log, finder);
-            log.Information("Earthquake mode: every {Interval} ms a key of [{Keys}] and a right click within {Jitter} px of {Point}; {LeftAttack}",
-                quake.IntervalMs, string.Join(", ", quake.Keys.Select(k => $"{k.Key} {k.Weight:0.##}")), quake.JitterPx, quake.Point,
-                quake.LeftAttackEverySeconds > 0 ? $"one left attack on a monster every {quake.LeftAttackEverySeconds}s" : "no left attack");
+            meteor = new MeteorCaster(meteorConfig, input, TimeProvider.System, log);
+            log.Information("Meteor mode: right click within {Jitter} px of {Point} every {Interval} ms; shield ({Shield}) every {ShieldEvery}s, then back to {Meteor}",
+                meteorConfig.JitterPx, meteorConfig.Point, meteorConfig.IntervalMs, meteorConfig.ShieldKey, meteorConfig.ShieldEverySeconds, meteorConfig.MeteorKey);
         }
 
         var runner = new BotRunner(config, capture, vision, input, window, control, TimeProvider.System, log,
-            earthquake is null ? CreateBrain(config, input, capture, vision, log) : null, restocker, earthquake);
+            meteor is null ? CreateBrain(config, input, capture, vision, log) : null, restocker, meteor);
 
         SessionRecorder? recorder = null;
         if (options.Record)

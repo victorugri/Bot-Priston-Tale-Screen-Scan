@@ -140,20 +140,16 @@ public static class ConfigLoader
             errors.Add("Combat: LostTargetGraceMs, ReacquireRadius and SearchRetryMs must be >= 0.");
         if (combat.ReclickMs <= 0) errors.Add("Combat.ReclickMs must be positive.");
         if (combat.OutOfReachRetryMs < 0) errors.Add("Combat.OutOfReachRetryMs must be >= 0.");
-        var quake = combat.Earthquake;
-        if (quake.IntervalMs < 50) errors.Add("Combat.Earthquake.IntervalMs must be >= 50.");
-        if (quake.JitterPx < 0) errors.Add("Combat.Earthquake.JitterPx must be >= 0.");
-        foreach (var key in quake.Keys)
-        {
-            CheckKey(key.Key, "Combat.Earthquake.Keys");
-            if (key.Weight <= 0) errors.Add($"Combat.Earthquake.Keys: weight of {key.Key} must be positive.");
-        }
-        if (quake.MinMpPercent is < 0 or > 100) errors.Add("Combat.Earthquake.MinMpPercent must be 0-100.");
-        if (quake.LeftAttackEverySeconds < 0 || quake.LeftAttackRetrySeconds < 1)
-            errors.Add("Combat.Earthquake.LeftAttackEverySeconds must be >= 0 and LeftAttackRetrySeconds >= 1.");
-        var wander = new PixelRect(quake.Point.X - quake.JitterPx, quake.Point.Y - quake.JitterPx, 2 * quake.JitterPx + 1, 2 * quake.JitterPx + 1);
+        var meteor = combat.Meteor;
+        if (meteor.IntervalMs < 100) errors.Add("Combat.Meteor.IntervalMs must be >= 100.");
+        if (meteor.ShieldEverySeconds < 1) errors.Add("Combat.Meteor.ShieldEverySeconds must be >= 1.");
+        if (meteor.JitterPx < 0) errors.Add("Combat.Meteor.JitterPx must be >= 0.");
+        if (meteor.MinMpPercent is < 0 or > 100) errors.Add("Combat.Meteor.MinMpPercent must be 0-100.");
+        CheckKey(meteor.MeteorKey, "Combat.Meteor.MeteorKey");
+        CheckKey(meteor.ShieldKey, "Combat.Meteor.ShieldKey");
+        var wander = new PixelRect(meteor.Point.X - meteor.JitterPx, meteor.Point.Y - meteor.JitterPx, 2 * meteor.JitterPx + 1, 2 * meteor.JitterPx + 1);
         if (!client.Contains(wander) || targeting.Exclusions.Any(r => !r.Intersect(wander).IsEmpty))
-            errors.Add("Combat.Earthquake.Point ± JitterPx must be inside the client area and outside Targeting.Exclusions.");
+            errors.Add("Combat.Meteor.Point ± JitterPx must be inside the client area and outside Targeting.Exclusions.");
         if (motion.AttackStepWatchMs < 0 || motion.AttackStepMinPx <= 0)
             errors.Add("Vision.Motion.AttackStepWatchMs must be >= 0 and AttackStepMinPx positive.");
         if (combat.NoProgressSeconds <= 0 || combat.MaxTargetSeconds <= 0)

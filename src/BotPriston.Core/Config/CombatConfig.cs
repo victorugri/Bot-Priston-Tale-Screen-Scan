@@ -43,54 +43,39 @@ public sealed class CombatConfig
     public UnderAttackConfig UnderAttack { get; set; } = new();
     public RestConfig Rest { get; set; } = new();
     public LootConfig Loot { get; set; } = new();
-    public EarthquakeConfig Earthquake { get; set; } = new();
+    public MeteorConfig Meteor { get; set; } = new();
 }
 
 /// <summary>
-/// Earthquake mode: area skills on the right button hit every monster around, so there is nothing to look
-/// for. Every cycle the bot picks one of the skill keys at random (they switch which skill the right
-/// button casts), moves the mouse slightly around the middle of the screen (a cursor that never moves
-/// makes casts stop counting) and right-clicks. Potions keep working. Replaces the hunt while enabled.
+/// Meteor mode: the meteor is an area skill cast with a right click near the middle of the screen, so
+/// there is nothing to look for. The bot right-clicks every <see cref="IntervalMs"/>; every
+/// <see cref="ShieldEverySeconds"/> it switches to the shield (key), right-clicks to cast it and switches
+/// back to the meteor. Potions keep working. Replaces the hunt (search, attack, right skill) while enabled.
 /// </summary>
-public sealed class EarthquakeConfig
+public sealed class MeteorConfig
 {
     public bool Enabled { get; set; }
 
-    /// <summary>Middle of the area where the mouse wanders (the character).</summary>
+    /// <summary>Middle of the area where the mouse clicks (the character).</summary>
     public PixelPoint Point { get; set; } = new(800, 450);
 
-    /// <summary>The mouse goes to a random spot this far from <see cref="Point"/> at most, every cycle.</summary>
+    /// <summary>Each click goes to a random spot this far from <see cref="Point"/> at most (0 = always the same spot).</summary>
     public int JitterPx { get; set; } = 25;
 
-    /// <summary>
-    /// Time between two cycles (key + mouse + right click). With the normal input timing (Input.*) a cycle
-    /// itself takes ~0.45 s, so shorter intervals just mean "as fast as possible".
-    /// </summary>
-    public int IntervalMs { get; set; } = 500;
+    /// <summary>Time between two meteor casts.</summary>
+    public int IntervalMs { get; set; } = 2000;
 
-    /// <summary>Skill keys pressed before each right click, one per cycle, picked at random by weight. Empty = none.</summary>
-    public List<WeightedKey> Keys { get; set; } = [];
+    /// <summary>Selects the meteor on the right button.</summary>
+    public string MeteorKey { get; set; } = "F4";
 
+    /// <summary>Selects the shield on the right button.</summary>
+    public string ShieldKey { get; set; } = "F2";
+
+    /// <summary>The shield is cast first and then every this many seconds.</summary>
+    public int ShieldEverySeconds { get; set; } = 90;
 
     /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
     public double MinMpPercent { get; set; }
-
-    /// <summary>
-    /// Every this many seconds, look for a monster in reach (hover sweep) and hit it once with the left
-    /// button, then go back to the earthquake: monsters standing on the character stop taking earthquake
-    /// damage after a while, and a basic attack brings it back. 0 = never.
-    /// </summary>
-    public int LeftAttackEverySeconds { get; set; }
-
-    /// <summary>When that search finds no monster in reach, try again after this long.</summary>
-    public int LeftAttackRetrySeconds { get; set; } = 10;
-}
-
-/// <summary>A key with its share of the random picks (weights don't have to add up to 1).</summary>
-public sealed class WeightedKey
-{
-    public string Key { get; set; } = "";
-    public double Weight { get; set; } = 1;
 }
 
 /// <summary>

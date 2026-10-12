@@ -226,6 +226,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             };
             ActivityText = runner.Restocker?.Busy == true ? "Pegando poções do inventário"
                 : runner.Meteor is not null ? (runner.State == RunnerState.Running ? "Meteoro" : "")
+                : Config.Combat.Mode == BotMode.PotionsOnly ? (runner.State == RunnerState.Running ? "Só poção: jogue à vontade" : "")
                 : runner.Brain?.State switch
             {
                 BrainState.Recover => runner.State == RunnerState.Running ? "Recuperando" : "",

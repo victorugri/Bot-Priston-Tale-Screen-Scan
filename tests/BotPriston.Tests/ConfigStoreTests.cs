@@ -100,5 +100,18 @@ public class ConfigStoreTests : IDisposable
         Assert.Equal(100, ConfigStore.Load(_basePath).Bot.TickMs);
     }
 
+    [Theory]
+    [InlineData("""{ "Combat": { "Meteor": { "Enabled": true } } }""", BotMode.Meteor)]
+    [InlineData("""{ "Combat": { "Enabled": false } }""", BotMode.PotionsOnly)]
+    [InlineData("""{ "Combat": { "Enabled": true, "Meteor": { "Enabled": false, "IntervalMs": 2500 } } }""", BotMode.Hunt)]
+    public void OldSwitches_BecomeTheMode(string settings, BotMode expected)
+    {
+        File.WriteAllText(SettingsPath, settings);
+
+        var config = ConfigStore.Load(_basePath);
+
+        Assert.Equal(expected, config.Combat.Mode);
+    }
+
     public void Dispose() => _dir.Dispose();
 }

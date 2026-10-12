@@ -9,7 +9,7 @@ public static class RunCommand
     {
         var backend = BotContext.ParseBackend(cmd.String("backend"));
         if (cmd.Flag("dry-run")) ctx.Config.Safety.DryRun = true;
-        if (cmd.Flag("no-combat")) ctx.Config.Combat.Enabled = false;
+        if (cmd.Flag("no-combat")) ctx.Config.Combat.Mode = Core.Config.BotMode.PotionsOnly;
         if (cmd.Flag("no-right-skill")) ctx.Config.Combat.RightSkill.Enabled = false;
         bool record = cmd.Flag("record");
         cmd.EnsureAllConsumed();

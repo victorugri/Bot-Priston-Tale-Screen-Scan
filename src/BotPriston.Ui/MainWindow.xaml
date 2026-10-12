@@ -268,12 +268,26 @@
                                 </StackPanel>
                             </Border>
 
+                            <!-- Mode -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Modo" Style="{StaticResource SectionTitle}" />
+                                    <RadioButton GroupName="Mode" Content="Caçar (acha e ataca os mobs)"
+                                                 IsChecked="{Binding Config.Combat.Mode, Converter={x:Static local:EnumMatchConverter.Instance}, ConverterParameter=Hunt}" />
+                                    <RadioButton GroupName="Mode" Content="Meteoro (botão direito no mob + escudo)"
+                                                 IsChecked="{Binding Config.Combat.Mode, Converter={x:Static local:EnumMatchConverter.Instance}, ConverterParameter=Meteor}"
+                                                 ToolTip="A cada intervalo clica com o botão direito num mob (pedra do cursor vermelha), procurando dentro do alcance do ataque. De tempos em tempos troca para o escudo (F2), clica no meio da tela e volta ao meteoro (F4)." />
+                                    <RadioButton GroupName="Mode" Content="Só poção (você joga, o bot toma poção)"
+                                                 IsChecked="{Binding Config.Combat.Mode, Converter={x:Static local:EnumMatchConverter.Instance}, ConverterParameter=PotionsOnly}"
+                                                 ToolTip="O bot só toma poção (e repõe do inventário, se ligado). Ele nunca mexe nos botões do mouse, então não atrapalha o seu ataque. A reposição do inventário usa o mouse por uns 2 s." />
+                                </StackPanel>
+                            </Border>
+
                             <!-- Combat -->
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Combate" Style="{StaticResource SectionTitle}" />
-                                    <CheckBox Content="Modo meteoro (botão direito no mob + escudo)" IsChecked="{Binding Config.Combat.Meteor.Enabled}"
-                                              ToolTip="A cada intervalo clica com o botão direito num mob (pedra do cursor vermelha), procurando dentro do alcance do ataque se precisar. De tempos em tempos troca para o escudo (F2), clica no meio da tela e volta ao meteoro (F4). Continua tomando e repondo poções." />
+                                    <TextBlock Text="Meteoro" Style="{StaticResource Label}" FontWeight="SemiBold" />
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -293,7 +307,7 @@
                                         <TextBlock Grid.Row="3" Text="Sem mob no alcance: procurar de novo em (ms)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Config.Combat.Meteor.SearchRetryMs}" />
                                     </Grid>
-                                    <CheckBox Content="Atacar mobs (desligado = só poções)" IsChecked="{Binding Config.Combat.Enabled}" />
+                                    <TextBlock Text="Caçar" Style="{StaticResource Label}" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <CheckBox Content="ATK contínuo ligado no jogo (clica 1 vez no mob)" IsChecked="{Binding Config.Combat.AutoAttack}"
                                               ToolTip="Ligue junto com o botão de ATK contínuo do jogo (ao lado do minimapa): o bot clica uma vez no mob e espera ele morrer, em vez de segurar o botão." />
                                     <CheckBox Content="Usar a skill do botão direito quando pronta" IsChecked="{Binding Config.Combat.RightSkill.Enabled}" />

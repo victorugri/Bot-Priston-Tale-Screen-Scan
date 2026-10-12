@@ -93,7 +93,7 @@ public sealed class BotSession : IDisposable
 
         var meteorConfig = config.Combat.Meteor;
         MeteorCaster? meteor = null;
-        if (meteorConfig.Enabled)
+        if (config.Combat.Mode == BotMode.Meteor)
         {
             var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
                 input, capture, vision.Cursor, vision.TargetPanel, log);
@@ -126,9 +126,9 @@ public sealed class BotSession : IDisposable
     private static Func<Action, CombatBrain>? CreateBrain(BotConfig config, IInputSink input,
         WindowCaptureSource capture, VisionPipeline vision, ILogger log)
     {
-        if (!config.Combat.Enabled)
+        if (config.Combat.Mode != BotMode.Hunt)
         {
-            log.Information("Combat off (Combat.Enabled = false): potions only");
+            log.Information("Mode {Mode}: no hunting", config.Combat.Mode);
             return null;
         }
 

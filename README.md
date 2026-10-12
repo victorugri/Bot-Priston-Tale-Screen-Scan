@@ -46,7 +46,7 @@ A janela é estreita, para caber à esquerda do jogo:
   - **Ajustar janela** faz o mesmo que o comando `layout`.
   - **Reabrir como admin** aparece se a janela não estiver como administrador.
   - **Iniciar** salva os ajustes, traz o jogo para frente e começa. F12 e Ctrl+F12 continuam valendo.
-- **Aba Ajustes:** os ajustes do dia a dia (poções, pegar poções do inventário, combate, skill direita, alcance da busca, ataque de quem bate de longe, descanso, segurança, teclas). Só dá para mudar com o bot parado.
+- **Aba Ajustes:** o **modo** (Caçar, Meteoro ou Só poção) e os ajustes do dia a dia (poções, pegar poções do inventário, combate, skill direita, alcance da busca, ataque de quem bate de longe, descanso, segurança, teclas). Só dá para mudar com o bot parado.
 
 **Como os ajustes são guardados:** o `botconfig.json` tem todos os padrões, com comentários, e fica no git. O que você muda na janela vai para o **`settings.json`**, que fica fora do git e guarda só as diferenças. O bot (janela ou terminal) junta os dois ao iniciar. **Restaurar padrões** apaga o `settings.json`.
 
@@ -102,7 +102,14 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 | **Engage** | Confere de novo que o cursor ainda está sobre o mob e segura o botão esquerdo. |
 | **Attack** | Mantém o ataque até a barra de HP do alvo zerar. Usa a skill do botão direito sempre que ela fica pronta. |
 
-**Modo meteoro** (`Combat.Meteor`, opção "Modo meteoro" na janela): para o meteoro, skill de área do botão direito.
+**Modos** (`Combat.Mode`, escolhido no topo da aba Ajustes):
+- **Caçar** (`Hunt`): o ciclo descrito acima.
+- **Meteoro** (`Meteor`): veja abaixo.
+- **Só poção** (`PotionsOnly`): **você joga, o bot só toma poção** (e repõe do inventário, se ligado).
+  - O bot nunca mexe nos botões do mouse: não força os botões para cima ao voltar o foco e o anti-andada fica desligado. Assim ele não atrapalha o seu ataque.
+  - A reposição do inventário é a única coisa que usa o mouse, por uns 2 s. Desligue "Pegar poções do inventário" se isso atrapalhar.
+
+**Modo meteoro** (`Combat.Meteor`): para o meteoro, skill do botão direito.
 - O meteoro só sai com um mob embaixo do cursor. **A cada 2 a 3 s, ao acaso** (`IntervalMs` a `IntervalMaxMs`) o bot dá um **clique direito no mob**:
   - Se o cursor ainda está sobre o mob anterior (pedra vermelha), clica ali mesmo.
   - Senão, faz a busca normal: só passa o mouse, **dentro do alcance do ataque** para não andar, e clica quando a pedra fica vermelha.
@@ -165,7 +172,7 @@ Todos no formato `dotnet run --project src/BotPriston.App -- <comando> [opções
 
 | Comando | Para que serve |
 |---|---|
-| `run` | **Roda o bot.** Opções: `--dry-run`, `--no-combat` (só poções), `--no-right-skill`, `--record` (grava cada quadro com o estado do bot desenhado em `samples/record_*`) |
+| `run` | **Roda o bot.** Opções: `--dry-run`, `--no-combat` (modo Só poção), `--no-right-skill`, `--record` (grava cada quadro com o estado do bot desenhado em `samples/record_*`) |
 | `layout` | Volta o jogo para 1600x900 e o encosta à direita da tela (`--left` para a esquerda) |
 | `windows` | Lista as janelas abertas (para configurar `Window.ProcessName`) |
 | `info` | Mostra a geometria da janela e testa a captura (tempo por quadro) |
@@ -222,7 +229,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 202 testes, todos sem precisar do jogo:
+São 207 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

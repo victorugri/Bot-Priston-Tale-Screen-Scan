@@ -26,6 +26,34 @@ public class BotRunnerTests
     private BotRunner Runner() => new(_config, _capture, _vision, _input, _window, _control, _time, TestLog.Silent);
 
     [Fact]
+    public void PotionsOnly_NeverTouchesTheMouseButtons()
+    {
+        _config.Combat.Mode = BotMode.PotionsOnly;
+        var runner = Runner();
+
+        runner.Tick();                                   // Starting -> Running
+        _window.IsForeground = false;
+        runner.Tick();                                   // focus lost
+        _window.IsForeground = true;
+        runner.Tick();                                   // back: the player may be holding the attack
+        _vision.Next = FakeVision.Snapshot(hp: 40, mp: 100, stm: 100);
+        runner.Tick();
+
+        Assert.Equal(0, _input.ForceReleaseCalls);
+        Assert.Equal(["key 2"], _input.Actions);
+    }
+
+    [Fact]
+    public void Hunt_ForcesTheButtonsUp_WhenTakingControl()
+    {
+        var runner = Runner();
+
+        runner.Tick();
+
+        Assert.Equal(1, _input.ForceReleaseCalls);
+    }
+
+    [Fact]
     public void HealthyBars_RunningAndNoInput()
     {
         var runner = Runner();

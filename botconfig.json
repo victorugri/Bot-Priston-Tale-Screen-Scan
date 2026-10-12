@@ -211,7 +211,8 @@
   // Combat loop: Recover -> SearchTarget -> Engage -> Attack -> (Loot) -> Recover.
   // Attack = hold the left button on the monster until its HP bar (target panel) is empty.
   "Combat": {
-    "Enabled": true,
+    "Mode": "Hunt",               // Hunt = find and attack monsters | Meteor = meteor mode below | PotionsOnly = only potions
+                                  // while you play (the bot never touches the mouse buttons)
     "LostTargetGraceMs": 400,     // cursor off the monster this long = it moved
     "ReacquireRadius": 150,       // then look for it this close to where it was
     "NoProgressSeconds": 5,       // give up a target whose HP doesn't drop for this long
@@ -220,8 +221,8 @@
     "OutOfReachRetryMs": 300,     // search again soon when the only monsters seen are out of reach (they come closer)
     "AutoAttack": false,          // game's "ATK contínuo" is on: click the monster once instead of holding the button
     "ReclickMs": 2000,            // with AutoAttack: click the target again if its HP hasn't dropped for this long
-    "Meteor": {                   // meteor mode: every IntervalMs a right click on a monster (gem red; hover
-      "Enabled": false,           // search within Targeting reach first if needed). Every ShieldEverySeconds
+    "Meteor": {                   // Mode "Meteor": every IntervalMs a right click on a monster (gem red; hover
+                                  // search within Targeting reach first if needed). Every ShieldEverySeconds
       "Point": { "X": 800, "Y": 450 },   // (and first thing): ShieldKey, right click near Point, MeteorKey.
       "JitterPx": 25,             // the shield click lands up to this far from Point
       "IntervalMs": 2000,         // time between meteors: random, from IntervalMs...

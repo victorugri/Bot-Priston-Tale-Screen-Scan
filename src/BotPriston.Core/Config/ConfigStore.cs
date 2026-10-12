@@ -25,6 +25,25 @@ public static class ConfigStore
     /// <summary>Defaults only (botconfig.json), validated.</summary>
     public static BotConfig LoadDefaults(string basePath) => ConfigLoader.Load(basePath);
 
+    /// <summary>
+    /// Settings saved by older versions: the "attack monsters" and "meteor" switches became Combat.Mode.
+    /// </summary>
+    private static void MigrateOldSettings(JsonObject settings)
+    {
+        if (settings["Combat"] is not JsonObject combat) return;
+
+        string? mode = null;
+        if (combat["Meteor"] is JsonObject meteor && meteor.Remove("Enabled", out var meteorOn))
+        {
+            if (meteorOn?.GetValue<bool>() == true) mode = "Meteor";
+            if (meteor.Count == 0) combat.Remove("Meteor");
+        }
+        if (combat.Remove("Enabled", out var combatOn) && combatOn?.GetValue<bool>() == false)
+            mode ??= "PotionsOnly";
+        if (mode is not null && !combat.ContainsKey("Mode"))
+            combat["Mode"] = mode;
+    }
+
     /// <summary>botconfig.json + settings.json (if present), validated.</summary>
     public static BotConfig Load(string basePath)
     {
@@ -42,6 +61,7 @@ public static class ConfigStore
         {
             throw new ConfigException($"Invalid JSON in {settingsPath}: {ex.Message}", ex);
         }
+        MigrateOldSettings(overrides);
         Merge(merged, overrides);
 
         BotConfig? config;

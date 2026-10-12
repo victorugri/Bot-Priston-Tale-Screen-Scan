@@ -132,7 +132,7 @@ static void PrintHelp() => Console.WriteLine("""
           --source <image> --roi x,y,w,h --out <file.png>
       run                     Run the bot: find monsters, attack until they die, use potions, rest
           --dry-run             Detect and log decisions, send no input
-          --no-combat           Potions only (same as Combat.Enabled = false)
+          --no-combat           Potions only while you play (same as Combat.Mode = PotionsOnly)
           --no-right-skill      Never use the right-click skill (same as Combat.RightSkill.Enabled = false)
           --record              Save every frame (JPEG, with the bot's state drawn) to samples/record_*
                                 Hotkeys: Hotkeys.PauseResume (F12) pause/resume, Hotkeys.Quit (Ctrl+F12) quit

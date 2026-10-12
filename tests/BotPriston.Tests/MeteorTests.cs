@@ -31,7 +31,7 @@ public class MeteorTests : IDisposable
             Meteor = new MeteorConfig
             {
                 // A fixed 2 s interval keeps the timing simple; the random one has its own test.
-                Enabled = true, Point = new PixelPoint(800, 450), JitterPx = 0, IntervalMs = 2000, IntervalMaxMs = 2000, SearchRetryMs = 500,
+                Point = new PixelPoint(800, 450), JitterPx = 0, IntervalMs = 2000, IntervalMaxMs = 2000, SearchRetryMs = 500,
                 MeteorKey = "F4", ShieldKey = "F2", ShieldEverySeconds = 90,
             },
         },

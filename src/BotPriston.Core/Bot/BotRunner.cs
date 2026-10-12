@@ -84,7 +84,8 @@ public sealed class BotRunner
         _meteor = meteor;
         if (_brain is not null)
             _brain.PotionAvailable = _potions.IsAvailable;
-        if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0)
+        // Potions only: the player moves the character; walking is theirs to do.
+        if (config.Safety.StopWalking && config.Vision.Motion.Boxes.Count > 0 && config.Combat.Mode != BotMode.PotionsOnly)
             _motion = new MotionDetector(config.Vision.Motion);
     }
 
@@ -402,9 +403,11 @@ public sealed class BotRunner
 
         // Back in control with the game focused: make sure the game doesn't think a button is still
         // held (an "up" sent while it had no focus may have been lost), and restart motion history.
+        // Not with potions only: the buttons belong to the player, who may be holding the attack.
         if (next == RunnerState.Running)
         {
-            _input.ForceReleaseButtons();
+            if (_config.Combat.Mode != BotMode.PotionsOnly)
+                _input.ForceReleaseButtons();
             _motion?.Reset();
             _walkingSince = null;
         }

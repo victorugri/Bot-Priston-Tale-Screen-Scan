@@ -2,11 +2,24 @@ using BotPriston.Core.Geometry;
 
 namespace BotPriston.Core.Config;
 
+/// <summary>What the bot does besides drinking (and restocking) potions.</summary>
+public enum BotMode
+{
+    /// <summary>Find monsters around the character and attack them (CombatBrain).</summary>
+    Hunt,
+    /// <summary>Meteor on a monster every few seconds, shield now and then (<see cref="MeteorConfig"/>).</summary>
+    Meteor,
+    /// <summary>
+    /// Potions only, while the player plays: the bot never touches the mouse buttons (no forced release,
+    /// no walking guard), so it doesn't fight the player's own attacks. Restock, if enabled, still uses the mouse.
+    /// </summary>
+    PotionsOnly,
+}
+
 /// <summary>Combat loop: find a monster, hold the attack button on it until it dies, recover, repeat.</summary>
 public sealed class CombatConfig
 {
-    /// <summary>False = survival only (potions), as in stage 3.</summary>
-    public bool Enabled { get; set; } = true;
+    public BotMode Mode { get; set; } = BotMode.Hunt;
 
     /// <summary>
     /// The cursor may leave the monster briefly (animations); only after this long is the target considered
@@ -55,8 +68,6 @@ public sealed class CombatConfig
 /// </summary>
 public sealed class MeteorConfig
 {
-    public bool Enabled { get; set; }
-
     /// <summary>Where the shield is cast: the middle of the screen (the character).</summary>
     public PixelPoint Point { get; set; } = new(800, 450);
 

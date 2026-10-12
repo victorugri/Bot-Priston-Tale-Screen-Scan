@@ -97,7 +97,10 @@ public sealed class BotSession : IDisposable
         {
             var finder = new HoverTargetFinder(config.Targeting, config.Window.ExpectedClientWidth, config.Window.ExpectedClientHeight,
                 input, capture, vision.Cursor, vision.TargetPanel, log);
-            meteor = new MeteorCaster(meteorConfig, input, TimeProvider.System, log, finder, vision.Cursor);
+            Func<OpenCvSharp.Mat, bool>? shieldOn = meteorConfig.VerifyShield && vision.ShieldBuff is { } buff
+                ? frame => buff.Detect(frame).Active
+                : null;
+            meteor = new MeteorCaster(meteorConfig, input, TimeProvider.System, log, finder, vision.Cursor, shieldOn);
             log.Information("Meteor mode: right click on a monster in reach every {Interval} ms ({Points} search points); shield ({Shield}) every {ShieldEvery}s, then back to {Meteor}",
                 meteorConfig.IntervalMs, finder.Points.Count, meteorConfig.ShieldKey, meteorConfig.ShieldEverySeconds, meteorConfig.MeteorKey);
         }

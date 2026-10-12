@@ -204,7 +204,7 @@ public class MeteorTests : IDisposable
         meteor.ShieldEverySeconds = 100_000;
         _cursor.Kind = CursorKind.Enemy;
         _finder.WillFind(Monster);
-        var caster = new MeteorCaster(meteor, _input, _time, TestLog.Silent, _finder, _cursor, new Random(5));
+        var caster = new MeteorCaster(meteor, _input, _time, TestLog.Silent, _finder, _cursor, random: new Random(5));
         Tick(caster);                                   // shield
 
         var castTimes = new List<double>();
@@ -220,6 +220,91 @@ public class MeteorTests : IDisposable
         Assert.True(gaps.Count > 90, $"{gaps.Count} gaps");
         Assert.All(gaps, g => Assert.InRange(g, 2000, 3010));
         Assert.True(gaps.Max() - gaps.Min() > 700, "the intervals vary");
+    }
+
+    // ---- Shield verified by its buff icon ----
+
+    private bool _shieldIcon;
+
+    private MeteorCaster VerifiedCaster() =>
+        new(_config.Combat.Meteor, _input, _time, TestLog.Silent, _finder, _cursor, _ => _shieldIcon);
+
+    [Fact]
+    public void Shield_KeepsClickingUntilItsIconShows_ThenBackToTheMeteor()
+    {
+        var caster = VerifiedCaster();
+
+        Tick(caster);                                   // F2 + click 1
+        _time.Advance(TimeSpan.FromMilliseconds(400));
+        Tick(caster);                                   // icon not there: click 2
+        _shieldIcon = true;                             // this one took
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        Tick(caster);
+
+        Assert.Equal(["key F2", ShieldClick, "click Right", ShieldClick, "click Right", "key F4"], _input.Actions);
+        Assert.Equal((1, 0), (caster.Shields, caster.ShieldFailures));
+    }
+
+    [Fact]
+    public void Shield_IconNeverShows_GivesUpAfterFiveClicks_AndTriesAgainSoon()
+    {
+        var caster = VerifiedCaster();
+
+        for (int i = 0; i < 6; i++)
+        {
+            Tick(caster);
+            _time.Advance(TimeSpan.FromMilliseconds(400));
+        }
+
+        Assert.Equal(5, _input.Actions.Count(a => a == "click Right"));
+        Assert.Equal("key F4", _input.Actions[^1]);
+        Assert.Equal((0, 1), (caster.Shields, caster.ShieldFailures));
+
+        _input.Actions.Clear();
+        _time.Advance(TimeSpan.FromSeconds(3));
+        Tick(caster);
+        Assert.Equal("key F2", _input.Actions[0]);      // next attempt
+    }
+
+    [Fact]
+    public void ShieldIconGone_RecastAtOnce_ButNotDuringTheMeteorAnimation()
+    {
+        _shieldIcon = true;
+        var caster = VerifiedCaster();
+        Tick(caster);                                   // shield refresh at start (icon already on): one click
+        Tick(caster);                                   // ends it, F4
+        _cursor.Kind = CursorKind.Enemy;
+        _finder.WillFind(Monster);
+        _time.Advance(TimeSpan.FromSeconds(5));
+        Tick(caster);                                   // meteor
+        Assert.Equal(1, caster.Casts);
+        _input.Actions.Clear();
+
+        _shieldIcon = false;                            // the shield ran out
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        Tick(caster);
+        _time.Advance(TimeSpan.FromMilliseconds(100));
+        Tick(caster);                                   // gone 2 ticks, but only 200 ms after the meteor click
+        Assert.DoesNotContain("key F2", _input.Actions);
+
+        _time.Advance(TimeSpan.FromMilliseconds(600));
+        Tick(caster);                                   // 800 ms after the meteor
+        Assert.Equal("key F2", _input.Actions[0]);
+        Assert.Equal(1, caster.ShieldLost);
+    }
+
+    [Fact]
+    public void ShieldIcon_IsReadOnRealScreenshots()
+    {
+        var config = TestConfig.Load();
+        using var vision = new VisionPipeline(config.Vision);
+        using var off = Cv2.ImRead(Path.Combine(TestPaths.Samples, "20261012_155930_387_escudo.png"), ImreadModes.Color);
+        using var on = Cv2.ImRead(Path.Combine(TestPaths.Samples, "20261012_155944_388_escudo.png"), ImreadModes.Color);
+        using var other = Cv2.ImRead(Path.Combine(TestPaths.Samples, "20261012_155827_167_buffs.png"), ImreadModes.Color);
+
+        Assert.False(vision.ShieldBuff!.Detect(off).Active);
+        Assert.True(vision.ShieldBuff.Detect(on).Active);
+        Assert.False(vision.ShieldBuff.Detect(other).Active); // other buffs only
     }
 
     [Fact]

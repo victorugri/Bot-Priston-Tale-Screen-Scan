@@ -145,6 +145,13 @@ public static class ConfigLoader
         if (meteor.IntervalMaxMs < meteor.IntervalMs) errors.Add("Combat.Meteor.IntervalMaxMs must be >= IntervalMs.");
         if (meteor.ShieldEverySeconds < 1) errors.Add("Combat.Meteor.ShieldEverySeconds must be >= 1.");
         if (meteor.SearchRetryMs < 0) errors.Add("Combat.Meteor.SearchRetryMs must be >= 0.");
+        if (meteor.ShieldAfterMeteorMs < 0 || meteor.ShieldRetryMs < 50 || meteor.ShieldMaxClicks < 1)
+            errors.Add("Combat.Meteor: ShieldAfterMeteorMs must be >= 0, ShieldRetryMs >= 50 and ShieldMaxClicks >= 1.");
+        var buff = config.Vision.ShieldBuff;
+        if (meteor.VerifyShield && string.IsNullOrWhiteSpace(buff.TemplatePath))
+            errors.Add("Vision.ShieldBuff.TemplatePath is empty (needed by Combat.Meteor.VerifyShield).");
+        if (meteor.VerifyShield) CheckRoi(buff.SearchArea, "Vision.ShieldBuff.SearchArea");
+        if (buff.MinScore is <= 0 or > 1) errors.Add("Vision.ShieldBuff.MinScore must be in (0, 1].");
         if (meteor.JitterPx < 0) errors.Add("Combat.Meteor.JitterPx must be >= 0.");
         if (meteor.MinMpPercent is < 0 or > 100) errors.Add("Combat.Meteor.MinMpPercent must be 0-100.");
         CheckKey(meteor.MeteorKey, "Combat.Meteor.MeteorKey");

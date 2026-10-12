@@ -14,6 +14,20 @@ public sealed class VisionConfig
     public PotionSlotsConfig PotionSlots { get; set; } = new();
     public ItemCountConfig ItemCount { get; set; } = new();
     public InventoryConfig Inventory { get; set; } = new();
+    public BuffConfig ShieldBuff { get; set; } = new();
+}
+
+/// <summary>A timed buff's round icon in the row at the top-left of the screen.</summary>
+public sealed class BuffConfig
+{
+    /// <summary>The middle of the icon (not the ring, which shows the time left), cut from a screenshot.</summary>
+    public string TemplatePath { get; set; } = "";
+
+    /// <summary>Where buff icons appear (they shift along the row as buffs come and go).</summary>
+    public PixelRect SearchArea { get; set; }
+
+    /// <summary>Minimum normalized correlation (TM_CCOEFF_NORMED) for the buff to count as on.</summary>
+    public double MinScore { get; set; } = 0.8;
 }
 
 /// <summary>Where each potion sits in the hotbar (one 22x22 item cell each; the stack size is printed on it).</summary>

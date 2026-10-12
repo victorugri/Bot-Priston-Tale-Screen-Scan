@@ -25,7 +25,12 @@ public sealed class VisionPipeline : IVision, IDisposable
         Cursor = new CursorDetector(config.Cursor);
         PotionSlots = new PotionSlotsDetector(config.PotionSlots, new ItemCountReader(config.ItemCount));
         Inventory = new InventoryDetector(config.Inventory);
+        if (!string.IsNullOrWhiteSpace(config.ShieldBuff.TemplatePath))
+            ShieldBuff = new BuffDetector(config.ShieldBuff);
     }
+
+    /// <summary>Not part of <see cref="Analyze"/>: only the meteor mode needs it. Null when not configured.</summary>
+    public BuffDetector? ShieldBuff { get; }
 
     public HudDetector Hud { get; }
     public PlayerBarsDetector PlayerBars { get; }
@@ -50,5 +55,6 @@ public sealed class VisionPipeline : IVision, IDisposable
     {
         Hud.Dispose();
         Inventory.Dispose();
+        ShieldBuff?.Dispose();
     }
 }

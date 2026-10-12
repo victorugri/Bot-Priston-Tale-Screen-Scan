@@ -116,6 +116,10 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
   - Sem mob no alcance, procura de novo em 0,5 s (`SearchRetryMs`).
   - **Enquanto o meteoro recarrega**, o bot já procura o próximo mob e deixa o cursor em cima dele. Quando o tempo acaba, o clique sai na hora.
 - **A cada 1 min e meio** (`ShieldEverySeconds`, e logo ao começar): aperta **F2** (escudo), dá o clique direito perto do meio da tela para lançá-lo e aperta **F4** para voltar ao meteoro (`ShieldKey`, `MeteorKey`).
+- **O escudo é conferido pelo ícone** (`VerifyShield`): enquanto ativo, aparece um ícone redondo com um bonequinho verde no canto superior esquerdo (`templates/buff_shield.png`).
+  - Depois do F2, o bot clica até o ícone aparecer (a cada 0,4 s, até 5 cliques; se não aparecer, tenta de novo em 3 s).
+  - **Se o ícone sumir a qualquer momento, relança na hora**, sem esperar o 1 min e meio.
+  - O lançamento espera 0,8 s depois do último meteoro (`ShieldAfterMeteorMs`), porque um clique no meio da animação do meteoro é ignorado pelo jogo.
 - Continua tomando poção (que tem prioridade) e repondo poções do inventário.
 - `MinMpPercent` segura os cliques com a mana baixa, se a poção de MP estiver desligada.
 - O contador "Skill direita" da janela mostra quantos meteoros foram lançados.
@@ -229,7 +233,7 @@ As seções `Vision` (posições e cores) e `Targeting.Exclusions` (áreas proib
 dotnet test
 ```
 
-São 207 testes, todos sem precisar do jogo:
+São 211 testes, todos sem precisar do jogo:
 - **Visão com prints reais:** `samples/labels.json` lista prints do jogo com o resultado esperado: interface visível, HP/MP/STM, estado e HP do alvo, cor da pedra do cursor, estado das skills, número de poções na barra e inventário aberto/página. Para cobrir uma situação nova, salve o print, acrescente uma entrada e rode os testes.
 - **Inventário com prints reais:** números das pilhas, células vazias e a poção da barra achada no lugar certo (e a de outro tipo não).
 - **Comportamento com jogo simulado:** relógio, janela, input e busca falsos testam o runner, as poções, a máquina de estados, os watchdogs e a pausa. A reposição roda contra um inventário simulado, em que V abre, E troca de página e Shift+tecla soma a pilha.

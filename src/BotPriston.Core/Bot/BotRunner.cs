@@ -389,6 +389,7 @@ public sealed class BotRunner
         {
             _input.ReleaseAll();
             _brain?.Suspend(reason);
+            _meteor?.Suspend();
         }
 
         // Paused/unfocused time doesn't count against the watchdogs.

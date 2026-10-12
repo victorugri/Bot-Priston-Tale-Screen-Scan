@@ -137,6 +137,14 @@
       "Page1Button": { "X": 28, "Y": 875, "Width": 16, "Height": 15 },  // "<", lit on page 1
       "Page2Button": { "X": 50, "Y": 875, "Width": 16, "Height": 15 },  // ">", lit on page 2
       "MaxIconDifference": 0.12   // same potion: ~0.02-0.04; a different potion: 0.3+
+    },
+
+    // The shield's round buff icon (top-left row of timed buffs) while it is on. Only its middle is
+    // compared: the ring around it shows the time left. On: ~1.0, off: < 0.5.
+    "ShieldBuff": {
+      "TemplatePath": "templates/buff_shield.png",
+      "SearchArea": { "X": 0, "Y": 0, "Width": 600, "Height": 60 },
+      "MinScore": 0.8
     }
   },
 
@@ -230,7 +238,11 @@
       "SearchRetryMs": 500,       // no monster in reach: search again after this
       "MeteorKey": "F4",
       "ShieldKey": "F2",
-      "ShieldEverySeconds": 90,
+      "ShieldEverySeconds": 90,   // recast every 90 s, and at once whenever its icon is gone (VerifyShield)
+      "VerifyShield": true,       // check the shield icon (Vision.ShieldBuff); keep clicking until it shows
+      "ShieldAfterMeteorMs": 800, // wait this long after a meteor click (a click during its animation is ignored)
+      "ShieldRetryMs": 400,       // between right clicks while the shield icon hasn't shown
+      "ShieldMaxClicks": 5,       // then back to the meteor and try again soon
       "MinMpPercent": 0           // hold the casts below this much mana (0 = always cast)
     },
     "RightSkill": {               // right-click skill on the target whenever its icon is in color

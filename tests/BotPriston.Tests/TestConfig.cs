@@ -14,6 +14,7 @@ internal static class TestConfig
         var config = ConfigLoader.Load(RepoConfigPath);
         config.Vision.Hud.TemplatePath = Path.Combine(TestPaths.RepoRoot, config.Vision.Hud.TemplatePath);
         config.Vision.Inventory.TemplatePath = Path.Combine(TestPaths.RepoRoot, config.Vision.Inventory.TemplatePath);
+        config.Vision.ShieldBuff.TemplatePath = Path.Combine(TestPaths.RepoRoot, config.Vision.ShieldBuff.TemplatePath);
         return config;
     }
 

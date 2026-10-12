@@ -87,8 +87,23 @@ public sealed class MeteorConfig
     /// <summary>Selects the shield on the right button.</summary>
     public string ShieldKey { get; set; } = "F2";
 
-    /// <summary>The shield is cast first and then every this many seconds.</summary>
+    /// <summary>The shield is cast first and then every this many seconds (and at once whenever its icon is gone).</summary>
     public int ShieldEverySeconds { get; set; } = 90;
+
+    /// <summary>
+    /// Check the shield's icon (Vision.ShieldBuff) to know it is on: recast it as soon as it is missing, and
+    /// after a cast keep clicking until it shows. False = trust the clicks, timer only.
+    /// </summary>
+    public bool VerifyShield { get; set; } = true;
+
+    /// <summary>A shield cast waits this long after the last meteor click (a click during its animation is ignored).</summary>
+    public int ShieldAfterMeteorMs { get; set; } = 800;
+
+    /// <summary>Time between two right clicks while the shield icon hasn't shown yet.</summary>
+    public int ShieldRetryMs { get; set; } = 400;
+
+    /// <summary>Right clicks before giving up a shield attempt (then the meteor resumes and it is tried again soon).</summary>
+    public int ShieldMaxClicks { get; set; } = 5;
 
     /// <summary>Don't cast below this much mana (0 = always): the MP potion gets a chance first.</summary>
     public double MinMpPercent { get; set; }

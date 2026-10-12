@@ -64,7 +64,7 @@ public sealed class MeteorConfig
     public int JitterPx { get; set; } = 25;
 
     /// <summary>Time between two meteor casts.</summary>
-    public int IntervalMs { get; set; } = 2000;
+    public int IntervalMs { get; set; } = 8000;
 
     /// <summary>When no monster is in reach, search again after this long.</summary>
     public int SearchRetryMs { get; set; } = 500;

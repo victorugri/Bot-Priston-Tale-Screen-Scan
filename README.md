@@ -103,7 +103,7 @@ Recover ──► SearchTarget ──► Engage ──► Attack ──► (Loot
 | **Attack** | Mantém o ataque até a barra de HP do alvo zerar. Usa a skill do botão direito sempre que ela fica pronta. |
 
 **Modo meteoro** (`Combat.Meteor`, opção "Modo meteoro" na janela): para o meteoro, skill de área do botão direito.
-- O meteoro só sai com um mob embaixo do cursor. **A cada 2 s** (`IntervalMs`) o bot dá um **clique direito no mob**:
+- O meteoro só sai com um mob embaixo do cursor. **A cada 8 s** (`IntervalMs`) o bot dá um **clique direito no mob**:
   - Se o cursor ainda está sobre o mob anterior (pedra vermelha), clica ali mesmo.
   - Senão, faz a busca normal: só passa o mouse, **dentro do alcance do ataque** para não andar, e clica quando a pedra fica vermelha.
   - Sem mob no alcance, procura de novo em 0,5 s (`SearchRetryMs`).

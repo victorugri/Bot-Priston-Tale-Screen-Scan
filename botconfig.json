@@ -224,7 +224,7 @@
       "Enabled": false,           // search within Targeting reach first if needed). Every ShieldEverySeconds
       "Point": { "X": 800, "Y": 450 },   // (and first thing): ShieldKey, right click near Point, MeteorKey.
       "JitterPx": 25,             // the shield click lands up to this far from Point
-      "IntervalMs": 2000,
+      "IntervalMs": 8000,         // the meteor recharges in 8 s
       "SearchRetryMs": 500,       // no monster in reach: search again after this
       "MeteorKey": "F4",
       "ShieldKey": "F2",

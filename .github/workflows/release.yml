@@ -1,0 +1,58 @@
+# Every push to master: run the tests, build BotPristonUi.exe (one self-contained file, no .NET
+# install needed) and publish it as a new GitHub release, marked as the latest one.
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test tests/BotPriston.Tests -c Release
+
+      - name: Build the exe
+        run: >
+          dotnet publish src/BotPriston.Ui -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=None -o publish
+
+      - name: Package
+        shell: pwsh
+        run: |
+          Copy-Item botconfig.json publish/
+          Copy-Item templates publish/templates -Recurse
+          Copy-Item README.md publish/
+          Compress-Archive -Path publish/* -DestinationPath BotPriston-win-x64.zip
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: BotPriston 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: BotPriston-win-x64.zip
+          body: |
+            **Como usar**
+            1. Baixe `BotPriston-win-x64.zip` (abaixo, em *Assets*) e extraia numa pasta.
+            2. Abra o Priston Tale em janela, 1600x900.
+            3. Abra `BotPristonUi.exe` **como administrador** (botão direito → Executar como administrador). O jogo roda como administrador, e sem isso o Windows descarta as teclas e cliques do bot.
+            4. Escolha o modo na aba **Ajustes** e clique em **Iniciar**.
+
+            O Windows pode avisar que o app não é reconhecido (ele não é assinado): clique em *Mais informações* → *Executar assim mesmo*.
+            Não precisa instalar o .NET. Seus ajustes ficam no `settings.json`, na mesma pasta.
+
+            Commit: ${{ github.sha }}

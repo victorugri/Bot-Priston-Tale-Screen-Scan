@@ -10,6 +10,19 @@ Numa sessão real de 11 minutos foram **159 mobs abatidos, 3,2 s cada em média*
 
 ---
 
+## Baixar (sem precisar compilar)
+
+A última versão fica sempre em **[Releases → Latest](https://github.com/victorugri/Bot-Priston-Tale-Screen-Scan/releases/latest)**:
+1. Baixe `BotPriston-win-x64.zip` e extraia numa pasta.
+2. Abra `BotPristonUi.exe` **como administrador**.
+   - Não precisa instalar o .NET.
+   - O Windows pode avisar que o app não é reconhecido, porque ele não é assinado: clique em *Mais informações* → *Executar assim mesmo*.
+3. Os seus ajustes ficam no `settings.json` da mesma pasta. O `botconfig.json` tem os padrões.
+
+Cada envio para a branch `master` gera um release novo automaticamente (`.github/workflows/release.yml`): roda os testes, gera o `.exe` (um arquivo só, com tudo dentro) e publica.
+
+---
+
 ## Situação por etapa
 
 | Etapa | O que é | Situação |

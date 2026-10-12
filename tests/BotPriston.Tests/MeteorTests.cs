@@ -30,7 +30,8 @@ public class MeteorTests : IDisposable
         {
             Meteor = new MeteorConfig
             {
-                Enabled = true, Point = new PixelPoint(800, 450), JitterPx = 0, IntervalMs = 2000, SearchRetryMs = 500,
+                // A fixed 2 s interval keeps the timing simple; the random one has its own test.
+                Enabled = true, Point = new PixelPoint(800, 450), JitterPx = 0, IntervalMs = 2000, IntervalMaxMs = 2000, SearchRetryMs = 500,
                 MeteorKey = "F4", ShieldKey = "F2", ShieldEverySeconds = 90,
             },
         },
@@ -167,6 +168,32 @@ public class MeteorTests : IDisposable
             runner.Tick();
         }
         Assert.Equal(RunnerState.Running, runner.State);
+    }
+
+    [Fact]
+    public void TimeBetweenMeteors_IsRandom_BetweenTwoAndThreeSeconds()
+    {
+        var meteor = _config.Combat.Meteor;
+        meteor.IntervalMaxMs = 3000;
+        meteor.ShieldEverySeconds = 100_000;
+        _cursor.Kind = CursorKind.Enemy;
+        _finder.WillFind(Monster);
+        var caster = new MeteorCaster(meteor, _input, _time, TestLog.Silent, _finder, _cursor, new Random(5));
+        Tick(caster);                                   // shield
+
+        var castTimes = new List<double>();
+        for (int ms = 0; ms < 300_000; ms += 10)        // 5 minutes, a tick every 10 ms
+        {
+            _time.Advance(TimeSpan.FromMilliseconds(10));
+            int before = caster.Casts;
+            Tick(caster);
+            if (caster.Casts > before) castTimes.Add(ms);
+        }
+
+        var gaps = castTimes.Zip(castTimes.Skip(1), (a, b) => b - a).ToList();
+        Assert.True(gaps.Count > 90, $"{gaps.Count} gaps");
+        Assert.All(gaps, g => Assert.InRange(g, 2000, 3010));
+        Assert.True(gaps.Max() - gaps.Min() > 700, "the intervals vary");
     }
 
     [Fact]

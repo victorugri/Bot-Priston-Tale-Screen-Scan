@@ -9,7 +9,8 @@ using Serilog;
 namespace BotPriston.Core.Bot;
 
 /// <summary>
-/// Meteor mode (<see cref="MeteorConfig"/>). Every <see cref="MeteorConfig.IntervalMs"/> a right click on a
+/// Meteor mode (<see cref="MeteorConfig"/>). Every 2-3 s (random, <see cref="MeteorConfig.IntervalMs"/> to
+/// <see cref="MeteorConfig.IntervalMaxMs"/>) a right click on a
 /// monster casts the meteor: on the same spot while the cursor gem is still red there, otherwise after a
 /// hover sweep (no click) finds one within attack reach. A right click is never sent with the gem not red.
 /// Every <see cref="MeteorConfig.ShieldEverySeconds"/> (and first thing): the shield key, a right click near
@@ -30,7 +31,7 @@ public sealed class MeteorCaster
     private PixelPoint? _aim;
     private bool _lowMpLogged, _noMonsterLogged;
 
-    /// <param name="random">Source of the mouse wandering for the shield click (fixed seed in tests).</param>
+    /// <param name="random">Source of the cast intervals and the shield click spot (fixed seed in tests).</param>
     public MeteorCaster(MeteorConfig config, IInputSink input, TimeProvider time, ILogger log,
         ITargetFinder finder, ICursorReader cursor, Random? random = null)
     {
@@ -102,7 +103,7 @@ public sealed class MeteorCaster
             return;
         }
 
-        _nextCast = now + TimeSpan.FromMilliseconds(_config.IntervalMs);
+        _nextCast = now + NextInterval();
         if (!_input.Click(MouseButton.Right)) return; // refused (game not focused): the runner pauses
         Casts++;
         if (Casts == 1 || Casts % 100 == 0)
@@ -121,9 +122,13 @@ public sealed class MeteorCaster
         _nextShield = now + TimeSpan.FromSeconds(_config.ShieldEverySeconds);
         if (!_input.PressKey(_meteorKey))
             _nextShield = now; // the meteor key didn't go out: do the whole switch again
-        _nextCast = now + TimeSpan.FromMilliseconds(_config.IntervalMs);
+        _nextCast = now + NextInterval();
         _log.Information("Shield #{Count} ({Shield} + right click), back to the meteor ({Meteor})", Shields, _shieldKey, _meteorKey);
     }
+
+    /// <summary>Random time until the next meteor, from IntervalMs to IntervalMaxMs.</summary>
+    private TimeSpan NextInterval() =>
+        TimeSpan.FromMilliseconds(_config.IntervalMs + _random.NextDouble() * (_config.IntervalMaxMs - _config.IntervalMs));
 
     /// <summary>A random spot within <see cref="MeteorConfig.JitterPx"/> of the middle (uniform over a disc).</summary>
     private PixelPoint Wander()

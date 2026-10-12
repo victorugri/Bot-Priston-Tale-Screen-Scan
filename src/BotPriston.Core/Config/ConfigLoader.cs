@@ -142,6 +142,7 @@ public static class ConfigLoader
         if (combat.OutOfReachRetryMs < 0) errors.Add("Combat.OutOfReachRetryMs must be >= 0.");
         var meteor = combat.Meteor;
         if (meteor.IntervalMs < 100) errors.Add("Combat.Meteor.IntervalMs must be >= 100.");
+        if (meteor.IntervalMaxMs < meteor.IntervalMs) errors.Add("Combat.Meteor.IntervalMaxMs must be >= IntervalMs.");
         if (meteor.ShieldEverySeconds < 1) errors.Add("Combat.Meteor.ShieldEverySeconds must be >= 1.");
         if (meteor.SearchRetryMs < 0) errors.Add("Combat.Meteor.SearchRetryMs must be >= 0.");
         if (meteor.JitterPx < 0) errors.Add("Combat.Meteor.JitterPx must be >= 0.");

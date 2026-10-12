@@ -63,8 +63,9 @@ public sealed class MeteorConfig
     /// <summary>The shield click goes to a random spot this far from <see cref="Point"/> at most (0 = always the same spot).</summary>
     public int JitterPx { get; set; } = 25;
 
-    /// <summary>Time between two meteor casts.</summary>
-    public int IntervalMs { get; set; } = 8000;
+    /// <summary>Time between two meteor casts: random, from <see cref="IntervalMs"/> to <see cref="IntervalMaxMs"/>.</summary>
+    public int IntervalMs { get; set; } = 2000;
+    public int IntervalMaxMs { get; set; } = 3000;
 
     /// <summary>When no monster is in reach, search again after this long.</summary>
     public int SearchRetryMs { get; set; } = 500;

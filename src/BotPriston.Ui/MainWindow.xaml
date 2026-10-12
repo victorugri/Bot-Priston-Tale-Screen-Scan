@@ -278,12 +278,14 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Text="Meteoro a cada (ms)" Style="{StaticResource Label}" />
+                                        <TextBlock Text="Meteoro a cada (ms, de / até, ao acaso)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Column="1" Text="{Binding Config.Combat.Meteor.IntervalMs}" />
+                                        <TextBox Grid.Column="2" Text="{Binding Config.Combat.Meteor.IntervalMaxMs}" />
                                         <TextBlock Grid.Row="1" Text="Escudo a cada (s)" Style="{StaticResource Label}" />
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Config.Combat.Meteor.ShieldEverySeconds}" />
                                         <TextBlock Grid.Row="2" Text="Mana mínima p/ lançar (%)" Style="{StaticResource Label}" />
